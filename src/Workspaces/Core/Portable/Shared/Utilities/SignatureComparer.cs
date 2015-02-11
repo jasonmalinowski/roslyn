@@ -97,8 +97,7 @@ namespace Microsoft.CodeAnalysis.Shared.Utilities
         public bool HaveSameSignature(IMethodSymbol method1,
             IMethodSymbol method2,
             bool caseSensitive,
-            bool compareParameterName = false,
-            bool isParameterCaseSensitive = false)
+            bool compareParameterName = false)
         {
             if ((method1.MethodKind == MethodKind.AnonymousFunction) !=
                 (method2.MethodKind == MethodKind.AnonymousFunction))
@@ -120,7 +119,7 @@ namespace Microsoft.CodeAnalysis.Shared.Utilities
                 return false;
             }
 
-            return HaveSameSignature(method1.Parameters, method2.Parameters, compareParameterName, isParameterCaseSensitive);
+            return HaveSameSignature(method1.Parameters, method2.Parameters, compareParameterName, caseSensitive);
         }
 
         private bool IdentifiersMatch(string identifier1, string identifier2, bool caseSensitive)

@@ -218,7 +218,7 @@ namespace Microsoft.CodeAnalysis.Shared.Utilities
                         }
                     }
 
-                    if (!ParametersAreEquivalent(x.Parameters, y.Parameters, equivalentTypesWithDifferingAssemblies))
+                    if (!ParametersAreEquivalent(x.Parameters, y.Parameters, equivalentTypesWithDifferingAssemblies, isParameterNameCaseSensitive: true))
                     {
                         return false;
                     }
