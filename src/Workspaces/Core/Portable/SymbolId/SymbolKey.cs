@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
+using Microsoft.CodeAnalysis.Shared.Utilities;
 using Microsoft.CodeAnalysis.Text;
 using Roslyn.Utilities;
 
@@ -226,7 +227,7 @@ namespace Microsoft.CodeAnalysis
             for (int i = 0; i < refKinds.Length; i++)
             {
                 var parameter = parameters[i];
-                if (refKinds[i] != parameters[i].RefKind)
+                if (!SymbolEquivalenceComparer.AreEquivalent(refKinds[i], parameter.RefKind, ignoreRefOut: options.IgnoreCase)) 
                 {
                     return false;
                 }

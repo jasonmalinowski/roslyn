@@ -50,7 +50,7 @@ namespace Microsoft.CodeAnalysis.Shared.Utilities
                 // equality, then we want to consider method type parameters by index only.
 
                 return
-                    x.RefKind == y.RefKind &&
+                    AreEquivalent(x.RefKind, y.RefKind, ignoreRefOut: !isCaseSensitive) &&
                     nameComparisonCheck &&
                     _symbolEqualityComparer.GetEquivalenceVisitor().AreEquivalent(x.CustomModifiers, y.CustomModifiers, equivalentTypesWithDifferingAssemblies) &&
                     _symbolEqualityComparer.SignatureTypeEquivalenceComparer.Equals(x.Type, y.Type, equivalentTypesWithDifferingAssemblies);
@@ -77,6 +77,13 @@ namespace Microsoft.CodeAnalysis.Shared.Utilities
                     Hash.Combine(x.IsRefOrOut(),
                     _symbolEqualityComparer.SignatureTypeEquivalenceComparer.GetHashCode(x.Type));
             }
+        }
+
+        public static bool AreEquivalent(RefKind rk1, RefKind rk2, bool ignoreRefOut)
+        {
+            return ignoreRefOut
+                ? (rk1 == RefKind.None) == (rk2 == RefKind.None)
+                : rk1 == rk2;
         }
     }
 }
