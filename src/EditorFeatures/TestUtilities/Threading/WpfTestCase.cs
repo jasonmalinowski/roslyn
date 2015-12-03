@@ -12,6 +12,9 @@ using Microsoft.CodeAnalysis.Utilities;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 using Roslyn.Utilities;
+using Xunit;
+using System.Reflection;
+using System.Collections.Generic;
 
 namespace Roslyn.Test.Utilities
 {
@@ -55,7 +58,8 @@ namespace Roslyn.Test.Utilities
                         SynchronizationContext.SetSynchronizationContext(dispatcherSynchronizationContext);
 
                         // Just call back into the normal xUnit dispatch process now that we are on an STA Thread with no synchronization context.
-                        var baseTask = base.RunAsync(diagnosticMessageSink, messageBus, constructorArguments, aggregator, cancellationTokenSource);
+                        var baseTask = new WpfTestCaseRunner(this, DisplayName, SkipReason, constructorArguments, TestMethodArguments, messageBus, aggregator, cancellationTokenSource).RunAsync();
+
                         do
                         {
                             var delay = Task.Delay(TimeSpan.FromMilliseconds(10), cancellationTokenSource.Token);
@@ -101,6 +105,40 @@ namespace Roslyn.Test.Utilities
             }
 
             s_wpfFactRequirementReason = reason;
+        }
+
+        private sealed class WpfTestCaseRunner : XunitTestCaseRunner
+        {
+            public WpfTestCaseRunner(IXunitTestCase testCase, string displayName, string skipReason, object[] constructorArguments, object[] testMethodArguments, IMessageBus messageBus, ExceptionAggregator aggregator, CancellationTokenSource cancellationTokenSource)
+                : base(testCase, displayName, skipReason, constructorArguments, testMethodArguments, messageBus, aggregator, cancellationTokenSource)
+            {
+            }
+
+            protected override Task<RunSummary> RunTestAsync()
+            {
+                return new WpfTestRunner(new XunitTest(TestCase, DisplayName), MessageBus, TestClass, ConstructorArguments, TestMethod, TestMethodArguments, SkipReason, BeforeAfterAttributes, new ExceptionAggregator(Aggregator), CancellationTokenSource).RunAsync();
+            }
+        }
+
+        private sealed class WpfTestRunner : XunitTestRunner
+        {
+            public WpfTestRunner(ITest test, IMessageBus messageBus, Type testClass, object[] constructorArguments, MethodInfo testMethod, object[] testMethodArguments, string skipReason, IReadOnlyList<BeforeAfterTestAttribute> beforeAfterAttributes, ExceptionAggregator aggregator, CancellationTokenSource cancellationTokenSource)
+                : base(test, messageBus, testClass, constructorArguments, testMethod, testMethodArguments, skipReason, beforeAfterAttributes, aggregator, cancellationTokenSource)
+            {
+            }
+
+            protected override async Task<decimal> InvokeTestMethodAsync(ExceptionAggregator aggregator)
+            {
+                var runtime = await base.InvokeTestMethodAsync(aggregator);
+
+                // Some part of the test should have asserted the need to use WpfFact. If none did, we should fail
+                if (WpfTestCase.s_wpfFactRequirementReason == null)
+                {
+                    aggregator.Add(new Exception($"The test used {nameof(WpfFactAttribute)} but it does not require it. A call to {nameof(WpfTestCase)}.{nameof(RequireWpfFact)} should be added at the point where the requirement is needed."));
+                }
+
+                return runtime;
+            }
         }
     }
 }
