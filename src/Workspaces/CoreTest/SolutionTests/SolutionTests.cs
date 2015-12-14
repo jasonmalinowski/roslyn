@@ -30,7 +30,7 @@ namespace Microsoft.CodeAnalysis.UnitTests
 {
     public partial class SolutionTests : TestBase
     {
-        private static readonly MetadataReference s_mscorlib = TestReferences.NetFx.v4_0_30319.mscorlib;
+        private readonly MetadataReference s_mscorlib = TestReferences.NetFx.v4_0_30319.mscorlib;
 
         public static byte[] GetResourceBytes(string fileName)
         {
