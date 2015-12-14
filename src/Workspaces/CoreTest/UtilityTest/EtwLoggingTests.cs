@@ -13,7 +13,7 @@ namespace Microsoft.CodeAnalysis.UnitTests
         [Fact]
         public void TestAllocationPooling()
         {
-            Logger.SetLogger(AggregateLogger.Create(TestLogger.Instance, Logger.GetLogger()));
+            Logger.SetLogger(AggregateLogger.Create(new TestLogger(), Logger.GetLogger()));
 
             var block1 = LogBlock();
             var block2 = LogBlock();
@@ -34,8 +34,6 @@ namespace Microsoft.CodeAnalysis.UnitTests
 
         private class TestLogger : ILogger
         {
-            public static readonly ILogger Instance = new TestLogger();
-
             public bool IsEnabled(FunctionId functionId)
             {
                 return true;
