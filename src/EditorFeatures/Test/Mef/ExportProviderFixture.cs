@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.Host;
+using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.VisualStudio.Composition;
 
 namespace Microsoft.CodeAnalysis.Editor.UnitTests.Mef
@@ -20,6 +22,11 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Mef
         public ExportProvider GetExportProvider()
         {
             return _exportProvider.Value;
+        }
+
+        public HostServices GetHostServices()
+        {
+            return MefV1HostServices.Create(GetExportProvider().AsExportProvider());
         }
 
         protected abstract ComposableCatalog GetCatalog();
