@@ -30,13 +30,10 @@ namespace Microsoft.CodeAnalysis.UnitTests.Persistence
         {
             private MemoryStream _stream;
 
-            public static int s_DisposalCount = 0;
-
             public void Dispose()
             {
                 _stream?.Dispose();
                 _stream = null;
-                s_DisposalCount++;
             }
 
             public Stream ReadStream(CancellationToken cancellationToken = default(CancellationToken))
@@ -81,13 +78,10 @@ namespace Microsoft.CodeAnalysis.UnitTests.Persistence
             private string _text;
             private Encoding _encoding;
 
-            public static int s_DisposalCount = 0;
-
             public void Dispose()
             {
                 _text = null;
                 _encoding = null;
-                s_DisposalCount++;
             }
 
             public SourceText ReadText(CancellationToken cancellationToken = default(CancellationToken))
