@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Editor.Implementation.Diagnostics;
 using Microsoft.CodeAnalysis.Editor.Shared.Preview;
 using Microsoft.CodeAnalysis.Editor.Shared.Tagging;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Mef;
 using Microsoft.CodeAnalysis.Editor.UnitTests.Squiggles;
 using Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces;
 using Microsoft.CodeAnalysis.ErrorReporting;
@@ -132,16 +133,19 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Preview
         [WpfFact, Trait(Traits.Editor, Traits.Editors.Preview)]
         public void TestPreviewServices()
         {
-            using (var previewWorkspace = new PreviewWorkspace(MefV1HostServices.Create(TestExportProvider.ExportProviderWithCSharpAndVisualBasic.AsExportProvider())))
+            using (var exportProviderFixture = new CommonCSharpVisualBasicAndEditorExportProviderFixture())
             {
-                var service = previewWorkspace.Services.GetService<ISolutionCrawlerRegistrationService>();
-                Assert.True(service is PreviewSolutionCrawlerRegistrationService);
+                using (var previewWorkspace = new PreviewWorkspace(exportProviderFixture.GetHostServices()))
+                {
+                    var service = previewWorkspace.Services.GetService<ISolutionCrawlerRegistrationService>();
+                    Assert.True(service is PreviewSolutionCrawlerRegistrationService);
 
-                var persistentService = previewWorkspace.Services.GetService<IPersistentStorageService>();
-                Assert.NotNull(persistentService);
+                    var persistentService = previewWorkspace.Services.GetService<IPersistentStorageService>();
+                    Assert.NotNull(persistentService);
 
-                var storage = persistentService.GetStorage(previewWorkspace.CurrentSolution);
-                Assert.True(storage is NoOpPersistentStorage);
+                    var storage = persistentService.GetStorage(previewWorkspace.CurrentSolution);
+                    Assert.True(storage is NoOpPersistentStorage);
+                }
             }
         }
 
@@ -149,34 +153,36 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Preview
         [WpfFact, Trait(Traits.Editor, Traits.Editors.Preview)]
         public void TestPreviewDiagnostic()
         {
-            var diagnosticService = TestExportProvider.ExportProviderWithCSharpAndVisualBasic.GetExportedValue<IDiagnosticAnalyzerService>() as IDiagnosticUpdateSource;
-
-            var taskSource = new TaskCompletionSource<DiagnosticsUpdatedArgs>();
-            diagnosticService.DiagnosticsUpdated += (s, a) => taskSource.TrySetResult(a);
-
-            using (var previewWorkspace = new PreviewWorkspace(MefV1HostServices.Create(TestExportProvider.ExportProviderWithCSharpAndVisualBasic.AsExportProvider())))
+            using (var exportProviderFixture = new CommonCSharpVisualBasicAndEditorExportProviderFixture())
             {
-                var solution = previewWorkspace.CurrentSolution
-                                               .AddProject("project", "project.dll", LanguageNames.CSharp)
-                                               .AddDocument("document", "class { }")
-                                               .Project
-                                               .Solution;
+                var diagnosticService = exportProviderFixture.GetExportProvider().GetExportedValue<IDiagnosticAnalyzerService>() as IDiagnosticUpdateSource;
+                var taskSource = new TaskCompletionSource<DiagnosticsUpdatedArgs>();
+                diagnosticService.DiagnosticsUpdated += (s, a) => taskSource.TrySetResult(a);
 
-                Assert.True(previewWorkspace.TryApplyChanges(solution));
-
-                previewWorkspace.OpenDocument(previewWorkspace.CurrentSolution.Projects.First().DocumentIds[0]);
-                previewWorkspace.EnableDiagnostic();
-
-                // wait 20 seconds
-                taskSource.Task.Wait(20000);
-                if (!taskSource.Task.IsCompleted)
+                using (var previewWorkspace = new PreviewWorkspace(exportProviderFixture.GetHostServices()))
                 {
-                    // something is wrong
-                    FatalError.Report(new System.Exception("not finished after 20 seconds"));
-                }
+                    var solution = previewWorkspace.CurrentSolution
+                                                   .AddProject("project", "project.dll", LanguageNames.CSharp)
+                                                   .AddDocument("document", "class { }")
+                                                   .Project
+                                                   .Solution;
 
-                var args = taskSource.Task.Result;
-                Assert.True(args.Diagnostics.Length > 0);
+                    Assert.True(previewWorkspace.TryApplyChanges(solution));
+
+                    previewWorkspace.OpenDocument(previewWorkspace.CurrentSolution.Projects.First().DocumentIds[0]);
+                    previewWorkspace.EnableDiagnostic();
+
+                    // wait 20 seconds
+                    taskSource.Task.Wait(20000);
+                    if (!taskSource.Task.IsCompleted)
+                    {
+                        // something is wrong
+                        FatalError.Report(new System.Exception("not finished after 20 seconds"));
+                    }
+
+                    var args = taskSource.Task.Result;
+                    Assert.True(args.Diagnostics.Length > 0);
+                }
             }
         }
 

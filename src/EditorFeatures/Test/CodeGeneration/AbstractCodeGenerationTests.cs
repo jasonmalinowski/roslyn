@@ -3,6 +3,7 @@
 using System;
 using Microsoft.CodeAnalysis.CodeGeneration;
 using Microsoft.CodeAnalysis.Editing;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Mef;
 using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.VisualStudio.Composition;
 using Roslyn.Test.Utilities;
@@ -15,27 +16,29 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeGeneration
             Func<SyntaxGenerator, SyntaxNode> nodeCreator,
             string cs, string vb)
         {
-            var hostServices = MefV1HostServices.Create(TestExportProvider.ExportProviderWithCSharpAndVisualBasic.AsExportProvider());
-            var workspace = new AdhocWorkspace(hostServices);
-
-            if (cs != null)
+            using (var exportProviderFixture = new CommonCSharpVisualBasicAndEditorExportProviderFixture())
             {
-                var csharpCodeGenService = workspace.Services.GetLanguageServices(LanguageNames.CSharp).GetService<ICodeGenerationService>();
-                var codeDefFactory = workspace.Services.GetLanguageServices(LanguageNames.CSharp).GetService<SyntaxGenerator>();
+                var workspace = new AdhocWorkspace(exportProviderFixture.GetHostServices());
 
-                var node = nodeCreator(codeDefFactory);
-                node = node.NormalizeWhitespace();
-                TokenUtilities.AssertTokensEqual(cs, node.ToFullString(), LanguageNames.CSharp);
-            }
+                if (cs != null)
+                {
+                    var csharpCodeGenService = workspace.Services.GetLanguageServices(LanguageNames.CSharp).GetService<ICodeGenerationService>();
+                    var codeDefFactory = workspace.Services.GetLanguageServices(LanguageNames.CSharp).GetService<SyntaxGenerator>();
 
-            if (vb != null)
-            {
-                var visualBasicCodeGenService = workspace.Services.GetLanguageServices(LanguageNames.VisualBasic).GetService<ICodeGenerationService>();
-                var codeDefFactory = workspace.Services.GetLanguageServices(LanguageNames.VisualBasic).GetService<SyntaxGenerator>();
+                    var node = nodeCreator(codeDefFactory);
+                    node = node.NormalizeWhitespace();
+                    TokenUtilities.AssertTokensEqual(cs, node.ToFullString(), LanguageNames.CSharp);
+                }
 
-                var node = nodeCreator(codeDefFactory);
-                node = node.NormalizeWhitespace();
-                TokenUtilities.AssertTokensEqual(vb, node.ToString(), LanguageNames.VisualBasic);
+                if (vb != null)
+                {
+                    var visualBasicCodeGenService = workspace.Services.GetLanguageServices(LanguageNames.VisualBasic).GetService<ICodeGenerationService>();
+                    var codeDefFactory = workspace.Services.GetLanguageServices(LanguageNames.VisualBasic).GetService<SyntaxGenerator>();
+
+                    var node = nodeCreator(codeDefFactory);
+                    node = node.NormalizeWhitespace();
+                    TokenUtilities.AssertTokensEqual(vb, node.ToString(), LanguageNames.VisualBasic);
+                }
             }
         }
 

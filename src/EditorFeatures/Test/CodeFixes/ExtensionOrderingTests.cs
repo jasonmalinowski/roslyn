@@ -4,6 +4,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CodeFixes.Suppression;
 using Microsoft.CodeAnalysis.CodeRefactorings;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Mef;
 using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.CodeAnalysis.Shared.Extensions;
 using Microsoft.CodeAnalysis.Shared.Utilities;
@@ -14,8 +15,14 @@ using Xunit;
 namespace Microsoft.CodeAnalysis.Editor.UnitTests.CodeFixes
 {
     public class ExtensionOrderingTests
+        : ICollectionFixture<CommonCSharpVisualBasicAndEditorExportProviderFixture>
     {
-        private readonly ExportProvider _exportProvider = TestExportProvider.ExportProviderWithCSharpAndVisualBasic;
+        private readonly ExportProvider _exportProvider;
+
+        public ExtensionOrderingTests(CommonCSharpVisualBasicAndEditorExportProviderFixture exportProviderFixture)
+        {
+            _exportProvider = exportProviderFixture.GetExportProvider();
+        }
 
         [ConditionalWpfFact(typeof(x86))]
         public void TestNoCyclesInFixProviders()

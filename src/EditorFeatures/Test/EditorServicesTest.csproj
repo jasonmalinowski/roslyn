@@ -248,6 +248,7 @@
     <Compile Include="Diagnostics\SuppressMessageAttributeTests.cs" />
     <Compile Include="CodeFixes\ExtensionOrderingTests.cs" />
     <Compile Include="Diagnostics\TestHostDiagnosticUpdateSource.cs" />
+    <Compile Include="Mef\CommonCSharpVisualBasicAndEditorExportProviderFixture.cs" />
     <Compile Include="Mef\ExportProviderFixture.cs" />
     <Compile Include="Extensions\SourceTextContainerExtensionsTests.cs" />
     <Compile Include="GoToAdjacentMember\AbstractGoToAdjacentMemberTests.cs" />
