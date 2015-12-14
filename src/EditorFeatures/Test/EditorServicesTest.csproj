@@ -227,8 +227,6 @@
     <Compile Include="Collections\Immutable\Maps\BidirectionalMapTests.cs" />
     <Compile Include="Collections\Immutable\Maps\MapTests.cs" />
     <Compile Include="Collections\IntervalTreeTests.cs" />
-    <Compile Include="Commands\CommandArgsTests.cs" />
-    <Compile Include="Commands\TypeCharCommandArgsTests.cs" />
     <Compile Include="CommentSelection\CommentUncommentSelectionCommandHandlerTests.cs" />
     <Compile Include="Completion\AbstractCompletionProviderTests.cs" />
     <Compile Include="Diagnostics\AbstractSuppressionAllCodeTests.cs" />
