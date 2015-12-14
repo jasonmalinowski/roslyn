@@ -8,7 +8,9 @@ namespace Microsoft.CodeAnalysis.Host
 {
     internal static class TestHost
     {
+#pragma warning disable RS0026 // Do not use shared mutable state in tests
         private static HostServices s_testServices;
+#pragma warning restore RS0026 // Do not use shared mutable state in tests
 
         public static HostServices Services
         {
