@@ -8,6 +8,8 @@ namespace Microsoft.CodeAnalysis.Differencing.UnitTests
 {
     public class MatchTests
     {
+        private readonly TestTreeComparer TreeComparerInstance = new TestTreeComparer();
+
         [Fact]
         public void KnownMatches()
         {
@@ -19,16 +21,16 @@ namespace Microsoft.CodeAnalysis.Differencing.UnitTests
             var newRoot = new TestNode(0, 1,
                 x2 = new TestNode(1, 2));
 
-            var m = TestTreeComparer.Instance.ComputeMatch(oldRoot, newRoot,
+            var m = TreeComparerInstance.ComputeMatch(oldRoot, newRoot,
                 new[] { KeyValuePair.Create(x1, x2), KeyValuePair.Create(x1, x2) });
 
             TestNode n;
             Assert.True(m.TryGetNewNode(x1, out n));
             Assert.Equal(n, x2);
 
-            Assert.Throws<ArgumentException>(() => TestTreeComparer.Instance.ComputeMatch(oldRoot, newRoot, new[] { KeyValuePair.Create(x1, x1) }));
+            Assert.Throws<ArgumentException>(() => TreeComparerInstance.ComputeMatch(oldRoot, newRoot, new[] { KeyValuePair.Create(x1, x1) }));
 
-            Assert.Throws<ArgumentException>(() => TestTreeComparer.Instance.ComputeMatch(oldRoot, newRoot, new[] { KeyValuePair.Create(x1, x2), KeyValuePair.Create(x1, new TestNode(0, 0)) }));
+            Assert.Throws<ArgumentException>(() => TreeComparerInstance.ComputeMatch(oldRoot, newRoot, new[] { KeyValuePair.Create(x1, x2), KeyValuePair.Create(x1, new TestNode(0, 0)) }));
         }
 
         [Fact]
@@ -44,7 +46,7 @@ namespace Microsoft.CodeAnalysis.Differencing.UnitTests
                 x2 = new TestNode(1, 2),
                 y2 = new TestNode(1, 3));
 
-            var m = TestTreeComparer.Instance.ComputeMatch(oldRoot, newRoot, new[]
+            var m = TreeComparerInstance.ComputeMatch(oldRoot, newRoot, new[]
             {
                 KeyValuePair.Create(x1, x2),
                 KeyValuePair.Create(y1, x2),
@@ -70,7 +72,7 @@ namespace Microsoft.CodeAnalysis.Differencing.UnitTests
             var newRoot = new TestNode(0, 1,
                 x2 = new TestNode(0, 2));
 
-            var m = TestTreeComparer.Instance.ComputeMatch(oldRoot, newRoot, new[]
+            var m = TreeComparerInstance.ComputeMatch(oldRoot, newRoot, new[]
             {
                 KeyValuePair.Create(x1, newRoot),
             });
