@@ -10,6 +10,7 @@ Imports Microsoft.CodeAnalysis.Editor.Implementation.IntelliSense.Completion
 Imports Microsoft.CodeAnalysis.Editor.Shared.Options
 Imports Microsoft.CodeAnalysis.Editor.UnitTests
 Imports Microsoft.CodeAnalysis.Editor.UnitTests.IntelliSense
+Imports Microsoft.CodeAnalysis.Editor.UnitTests.Mef
 Imports Microsoft.CodeAnalysis.Host.Mef
 Imports Microsoft.CodeAnalysis.Options
 Imports Microsoft.CodeAnalysis.Shared.TestHooks
@@ -69,7 +70,7 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Snippets
 
         Private Shared Function CreatePartCatalog(types As IEnumerable(Of Type)) As ComposableCatalog
             Dim extraParts = types.Concat({GetType(SignatureHelpWaiter), GetType(CompletionWaiter)})
-            Return MinimalTestExportProvider.CreateTypeCatalog(extraParts)
+            Return MefUtilities.CreateTypeCatalog(extraParts)
         End Function
 
         Public Property CurrentCompletionPresenterSession As TestCompletionPresenterSession Implements IIntelliSenseTestState.CurrentCompletionPresenterSession

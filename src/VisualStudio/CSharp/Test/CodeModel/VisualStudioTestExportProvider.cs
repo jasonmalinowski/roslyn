@@ -3,6 +3,7 @@
 using System;
 using System.Linq;
 using Microsoft.CodeAnalysis.Editor.UnitTests;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Mef;
 using Microsoft.VisualStudio.Composition;
 using Microsoft.VisualStudio.LanguageServices.CSharp.CodeModel;
 
@@ -17,9 +18,9 @@ namespace Microsoft.VisualStudio.LanguageServices.CSharp.UnitTests.CodeModel
         {
             PartCatalog =
                 TestExportProvider.EntireAssemblyCatalogWithCSharpAndVisualBasic.WithParts(
-                    MinimalTestExportProvider.CreateAssemblyCatalog(typeof(CSharpCodeModelService).Assembly));
+                    MefUtilities.CreateAssemblyCatalog(typeof(CSharpCodeModelService).Assembly));
 
-            ExportProvider = MinimalTestExportProvider.CreateExportProvider(PartCatalog);
+            ExportProvider = MefUtilities.CreateExportProvider(PartCatalog);
         }
     }
 }

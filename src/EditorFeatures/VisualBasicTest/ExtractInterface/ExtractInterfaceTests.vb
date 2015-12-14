@@ -5,6 +5,7 @@ Imports Microsoft.CodeAnalysis.Editor.Implementation.Interactive
 Imports Microsoft.CodeAnalysis.Editor.UnitTests
 Imports Microsoft.CodeAnalysis.Editor.UnitTests.Extensions
 Imports Microsoft.CodeAnalysis.Editor.UnitTests.ExtractInterface
+Imports Microsoft.CodeAnalysis.Editor.UnitTests.Mef
 Imports Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
 Imports Microsoft.CodeAnalysis.Editor.VisualBasic.ExtractInterface
 Imports Microsoft.CodeAnalysis.ExtractInterface
@@ -1257,7 +1258,7 @@ End Namespace
         <Trait(Traits.Feature, Traits.Features.ExtractInterface)>
         <Trait(Traits.Feature, Traits.Features.Interactive)>
         Public Async Function TestExtractInterfaceCommandDisabledInSubmission() As Task
-            Dim exportProvider = MinimalTestExportProvider.CreateExportProvider(
+            Dim exportProvider = MefUtilities.CreateExportProvider(
                 TestExportProvider.EntireAssemblyCatalogWithCSharpAndVisualBasic.WithParts(GetType(InteractiveDocumentSupportsFeatureService)))
 
             Using workspace = Await TestWorkspaceFactory.CreateWorkspaceAsync(

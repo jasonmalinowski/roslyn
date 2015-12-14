@@ -15,6 +15,7 @@ using Microsoft.VisualStudio.Text.Operations;
 using Roslyn.Test.Utilities;
 using Xunit;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Mef;
 
 namespace Microsoft.CodeAnalysis.Editor.UnitTests
 {
@@ -115,10 +116,10 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests
 
             if (extraParts == null)
             {
-                return MinimalTestExportProvider.CreateExportProvider(baseCatalog);
+                return MefUtilities.CreateExportProvider(baseCatalog);
             }
 
-            return MinimalTestExportProvider.CreateExportProvider(baseCatalog.WithParts(extraParts));
+            return MefUtilities.CreateExportProvider(baseCatalog.WithParts(extraParts));
         }
 
         public virtual ITextView TextView

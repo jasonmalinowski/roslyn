@@ -10,6 +10,7 @@ Imports Microsoft.VisualStudio.GraphModel
 Imports Microsoft.VisualStudio.LanguageServices.Implementation.Progression
 Imports Roslyn.Test.Utilities
 Imports Microsoft.CodeAnalysis.Editor.UnitTests
+Imports Microsoft.CodeAnalysis.Editor.UnitTests.Mef
 
 Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Progression
     Friend Class ProgressionTestState
@@ -23,7 +24,7 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.Progression
 
         Public Shared Async Function CreateAsync(workspaceXml As XElement) As Task(Of ProgressionTestState)
             Dim workspace = Await TestWorkspaceFactory.CreateWorkspaceAsync(workspaceXml,
-                                                              exportProvider:=MinimalTestExportProvider.CreateExportProvider(CompositionCatalog))
+                                                              exportProvider:=MefUtilities.CreateExportProvider(CompositionCatalog))
 
             Return New ProgressionTestState(workspace)
         End Function

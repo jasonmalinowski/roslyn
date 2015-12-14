@@ -7,6 +7,7 @@ Imports Microsoft.CodeAnalysis.Completion
 Imports Microsoft.CodeAnalysis.Editor.CommandHandlers
 Imports Microsoft.CodeAnalysis.Editor.Commands
 Imports Microsoft.CodeAnalysis.Editor.Implementation.IntelliSense.Completion
+Imports Microsoft.CodeAnalysis.Editor.UnitTests.Mef
 Imports Microsoft.CodeAnalysis.Host.Mef
 Imports Microsoft.CodeAnalysis.Shared.TestHooks
 Imports Microsoft.VisualStudio.Composition
@@ -84,7 +85,7 @@ Namespace Microsoft.CodeAnalysis.Editor.UnitTests.IntelliSense
             types.Add(GetType(CompletionWaiter))
             types.Add(GetType(SignatureHelpWaiter))
 
-            Return MinimalTestExportProvider.CreateTypeCatalog(types)
+            Return MefUtilities.CreateTypeCatalog(types)
         End Function
 
         Public Shared Function CreateVisualBasicTestState(

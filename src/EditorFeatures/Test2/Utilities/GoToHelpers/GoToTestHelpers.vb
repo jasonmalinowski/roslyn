@@ -2,6 +2,7 @@
 
 Imports Microsoft.CodeAnalysis.Editor.Host
 Imports Microsoft.CodeAnalysis.Editor.Navigation
+Imports Microsoft.CodeAnalysis.Editor.UnitTests.Mef
 Imports Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
 Imports Microsoft.CodeAnalysis.GeneratedCodeRecognition
 Imports Microsoft.CodeAnalysis.Navigation
@@ -15,7 +16,7 @@ Namespace Microsoft.CodeAnalysis.Editor.UnitTests.Utilities.GoToHelpers
                         GetType(DefaultSymbolNavigationServiceFactory),
                         GetType(GeneratedCodeRecognitionServiceFactory))
 
-        Public ReadOnly ExportProvider As ExportProvider = MinimalTestExportProvider.CreateExportProvider(Catalog)
+        Public ReadOnly ExportProvider As ExportProvider = MefUtilities.CreateExportProvider(Catalog)
 
         Public Async Function TestAsync(workspaceDefinition As XElement, expectedResult As Boolean, executeOnDocument As Func(Of Document, Integer, IEnumerable(Of Lazy(Of INavigableItemsPresenter)), Boolean)) As System.Threading.Tasks.Task
             Using workspace = Await TestWorkspaceFactory.CreateWorkspaceAsync(workspaceDefinition, exportProvider:=ExportProvider)

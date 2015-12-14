@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis.Editor.Host;
 using Microsoft.CodeAnalysis.Editor.Implementation.CallHierarchy;
 using Microsoft.CodeAnalysis.Editor.Implementation.Notification;
 using Microsoft.CodeAnalysis.Editor.SymbolMapping;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Mef;
 using Microsoft.CodeAnalysis.Editor.UnitTests.Utilities;
 using Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces;
 using Microsoft.CodeAnalysis.Notification;
@@ -126,7 +127,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.CallHierarchy
                 .WithPart(typeof(EditorNotificationServiceFactory))
                 .WithParts(additionalTypes);
 
-            return MinimalTestExportProvider.CreateExportProvider(catalog);
+            return MefUtilities.CreateExportProvider(catalog);
         }
 
         public static async Task<CallHierarchyTestState> CreateAsync(string markup, params Type[] additionalTypes)

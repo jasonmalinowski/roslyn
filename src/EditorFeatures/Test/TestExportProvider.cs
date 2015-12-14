@@ -3,6 +3,7 @@
 using System;
 using System.Linq;
 using Microsoft.CodeAnalysis.CodeGeneration;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Mef;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Formatting.Rules;
 using Microsoft.VisualStudio.Composition;
@@ -61,8 +62,8 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests
             {
                 if (t_lazyMinimumCatalogWithCSharpAndVisualBasic == null)
                 {
-                    t_lazyMinimumCatalogWithCSharpAndVisualBasic = new Lazy<ComposableCatalog>(() => MinimalTestExportProvider.CreateTypeCatalog(GetNeutralAndCSharpAndVisualBasicTypes())
-                        .WithParts(MinimalTestExportProvider.CreateAssemblyCatalog(MinimalTestExportProvider.GetVisualStudioAssemblies())));
+                    t_lazyMinimumCatalogWithCSharpAndVisualBasic = new Lazy<ComposableCatalog>(() => MefUtilities.CreateTypeCatalog(GetNeutralAndCSharpAndVisualBasicTypes())
+                        .WithParts(MefUtilities.CreateAssemblyCatalog(MinimalTestExportProvider.GetVisualStudioAssemblies())));
                 }
 
                 return t_lazyMinimumCatalogWithCSharpAndVisualBasic.Value;
@@ -130,7 +131,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests
         /// </summary>
         public static ExportProvider CreateExportProviderWithCSharpAndVisualBasic()
         {
-            return MinimalTestExportProvider.CreateExportProvider(CreateAssemblyCatalogWithCSharpAndVisualBasic());
+            return MefUtilities.CreateExportProvider(CreateAssemblyCatalogWithCSharpAndVisualBasic());
         }
 
         /// <summary>
@@ -139,9 +140,8 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests
         /// </summary>
         public static ComposableCatalog CreateAssemblyCatalogWithCSharpAndVisualBasic()
         {
-            return MinimalTestExportProvider.CreateAssemblyCatalog(
-                GetNeutralAndCSharpAndVisualBasicTypes().Select(t => t.Assembly).Distinct().Concat(MinimalTestExportProvider.GetVisualStudioAssemblies()),
-                MinimalTestExportProvider.CreateResolver());
+            return MefUtilities.CreateAssemblyCatalog(
+                GetNeutralAndCSharpAndVisualBasicTypes().Select(t => t.Assembly).Distinct().Concat(MinimalTestExportProvider.GetVisualStudioAssemblies()));
         }
     }
 }

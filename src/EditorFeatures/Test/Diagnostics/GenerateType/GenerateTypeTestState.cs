@@ -12,6 +12,7 @@ using Microsoft.CodeAnalysis.Editor.Implementation.CodeActions;
 using Microsoft.CodeAnalysis.Editor.Implementation.InlineRename;
 using Microsoft.CodeAnalysis.Editor.Implementation.Preview;
 using Microsoft.CodeAnalysis.Editor.Shared.Extensions;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Mef;
 using Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces;
 using Microsoft.CodeAnalysis.Editor.VisualBasic.LanguageServices;
 using Microsoft.CodeAnalysis.GenerateType;
@@ -105,7 +106,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Diagnostics.GenerateType
             }
         }
 
-        private static readonly ExportProvider s_exportProvider = MinimalTestExportProvider.CreateExportProvider(
+        private static readonly ExportProvider s_exportProvider = MefUtilities.CreateExportProvider(
             TestExportProvider.MinimumCatalogWithCSharpAndVisualBasic.WithParts(
                 typeof(TestGenerateTypeOptionsService),
                 typeof(TestProjectManagementService),

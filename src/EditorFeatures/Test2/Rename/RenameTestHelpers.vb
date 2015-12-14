@@ -6,6 +6,7 @@ Imports Microsoft.CodeAnalysis.Diagnostics
 Imports Microsoft.CodeAnalysis.Editor.Host
 Imports Microsoft.CodeAnalysis.Editor.Implementation.InlineRename
 Imports Microsoft.CodeAnalysis.Editor.Implementation.RenameTracking
+Imports Microsoft.CodeAnalysis.Editor.UnitTests.Mef
 Imports Microsoft.CodeAnalysis.Editor.UnitTests.RenameTracking
 Imports Microsoft.CodeAnalysis.Editor.UnitTests.Utilities.GoToHelpers
 Imports Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
@@ -22,13 +23,13 @@ Namespace Microsoft.CodeAnalysis.Editor.UnitTests.Rename
     Friend Module RenameTestHelpers
 
         <ThreadStatic>
-        Friend _exportProvider As ExportProvider = MinimalTestExportProvider.CreateExportProvider(
+        Friend _exportProvider As ExportProvider = MefUtilities.CreateExportProvider(
             TestExportProvider.EntireAssemblyCatalogWithCSharpAndVisualBasic.WithParts(GetType(MockDocumentNavigationServiceFactory), GetType(RenameWaiter)))
 
         Friend ReadOnly Property ExportProvider As ExportProvider
             Get
                 If _exportProvider Is Nothing Then
-                    _exportProvider = MinimalTestExportProvider.CreateExportProvider(
+                    _exportProvider = MefUtilities.CreateExportProvider(
                         TestExportProvider.EntireAssemblyCatalogWithCSharpAndVisualBasic.WithParts(GetType(MockDocumentNavigationServiceFactory), GetType(RenameWaiter)))
                 End If
 

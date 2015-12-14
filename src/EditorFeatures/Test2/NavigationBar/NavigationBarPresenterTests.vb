@@ -6,10 +6,11 @@ Imports Microsoft.CodeAnalysis.Shared.TestHooks
 Imports Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
 Imports Microsoft.VisualStudio.Text
 Imports Microsoft.VisualStudio.Composition
+Imports Microsoft.CodeAnalysis.Editor.UnitTests.Mef
 
 Namespace Microsoft.CodeAnalysis.Editor.UnitTests.NavigationBar
     Public Class NavigationBarControllerTests
-        Friend ReadOnly ExportProvider As ExportProvider = MinimalTestExportProvider.CreateExportProvider(
+        Friend ReadOnly ExportProvider As ExportProvider = MefUtilities.CreateExportProvider(
             TestExportProvider.EntireAssemblyCatalogWithCSharpAndVisualBasic.WithPart(GetType(NavigationBarWaiter)))
 
         <[Shared]>

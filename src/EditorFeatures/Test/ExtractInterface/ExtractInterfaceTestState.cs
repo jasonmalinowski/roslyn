@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.ExtractInterface;
 using Microsoft.CodeAnalysis.Editor.UnitTests;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Mef;
 using Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces;
 using Microsoft.CodeAnalysis.ExtractInterface;
 using Microsoft.CodeAnalysis.Host;
@@ -53,7 +54,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.ExtractInterface
             ExtractInterfaceService = ExtractFromDocument.GetLanguageService<AbstractExtractInterfaceService>();
         }
 
-        public static readonly ExportProvider ExportProvider = MinimalTestExportProvider.CreateExportProvider(
+        public static readonly ExportProvider ExportProvider = MefUtilities.CreateExportProvider(
             TestExportProvider.MinimumCatalogWithCSharpAndVisualBasic
                 .WithPart(typeof(TestExtractInterfaceOptionsService))
                 .WithPart(typeof(CSharpExtractInterfaceService))
