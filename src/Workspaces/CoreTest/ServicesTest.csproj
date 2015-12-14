@@ -285,6 +285,9 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup>
+    <Analyzer Include="..\..\..\Roslyn.Diagnostics.Analyzers.NewRule.dll" />
+  </ItemGroup>
   <ImportGroup Label="Targets">
     <Import Project="..\..\..\build\Targets\VSL.Imports.targets" />
     <Import Project="..\..\..\build\Targets\Roslyn.Toolsets.Xunit.targets" />

@@ -1,0 +1,304 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Roslyn.Diagnostics.Analyzers.NewRule</name>
+    </assembly>
+    <members>
+        <member name="T:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.AddPublicTypesAndMembersToTheDeclaredAPIDescription">
+            <summary>
+              Looks up a localized string similar to All public types and members should be declared in PublicAPI.txt. This draws attention to API changes in the code reviews and source control history, and helps prevent breaking changes..
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.AddPublicTypesAndMembersToTheDeclaredAPIMessage">
+            <summary>
+              Looks up a localized string similar to Add public types and members to the declared API.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.AddPublicTypesAndMembersToTheDeclaredAPITitle">
+            <summary>
+              Looks up a localized string similar to Add public types and members to the declared API.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.CategoryApiDesign">
+            <summary>
+              Looks up a localized string similar to ApiDesign.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.CategoryPerformance">
+            <summary>
+              Looks up a localized string similar to Performance.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.CategoryReliability">
+            <summary>
+              Looks up a localized string similar to Reliability.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.CategoryUsage">
+            <summary>
+              Looks up a localized string similar to Usage.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.DoNotInvokeDiagnosticDescriptorDescription">
+            <summary>
+              Looks up a localized string similar to Accessing the Descriptor property of Diagnostic in compiler layer leads to unnecessary string allocations for fields of the descriptor that are not utilized in command line compilation. Hence, you should avoid accessing the Descriptor of the compiler diagnostics here. Instead you should directly access these properties off the Diagnostic type..
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.DoNotInvokeDiagnosticDescriptorMessage">
+            <summary>
+              Looks up a localized string similar to Do not invoke Diagnostic.Descriptor.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.DoNotInvokeDiagnosticDescriptorTitle">
+            <summary>
+              Looks up a localized string similar to Do not invoke Diagnostic.Descriptor.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.DoNotUseGenericCodeActionCreateToCreateCodeActionDescription">
+            <summary>
+              Looks up a localized string similar to #N/A.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.DoNotUseGenericCodeActionCreateToCreateCodeActionMessage">
+            <summary>
+              Looks up a localized string similar to Do not use generic CodeAction.Create to create CodeAction.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.DoNotUseGenericCodeActionCreateToCreateCodeActionTitle">
+            <summary>
+              Looks up a localized string similar to Do not use generic CodeAction.Create to create CodeAction.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.DoNotUseSharedMutableStateInTestsMessage">
+            <summary>
+              Looks up a localized string similar to The member {0} is static member of a mutable type, which is forbidden in tests. Use the appropriate xUnit support, such as initalization in the constructor, or a fixture. If the type is actually immutable, then update the analyzer to say so..
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.DoNotUseSharedMutableStateInTestsTitle">
+            <summary>
+              Looks up a localized string similar to Do not use shared mutable state in tests.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.InvokeTheCorrectPropertyToEnsureCorrectUseSiteDiagnosticsDescription">
+            <summary>
+              Looks up a localized string similar to #N/A.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.InvokeTheCorrectPropertyToEnsureCorrectUseSiteDiagnosticsMessage">
+            <summary>
+              Looks up a localized string similar to Invoke the correct property to ensure correct use site diagnostics..
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.InvokeTheCorrectPropertyToEnsureCorrectUseSiteDiagnosticsTitle">
+            <summary>
+              Looks up a localized string similar to Invoke the correct property to ensure correct use site diagnostics..
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.OverrideObjectEqualsObjectWhenImplementingIequatableDescription">
+            <summary>
+              Looks up a localized string similar to #N/A.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.OverrideObjectEqualsObjectWhenImplementingIequatableMessage">
+            <summary>
+              Looks up a localized string similar to Override Object.Equals(object) when implementing Iequatable.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.OverrideObjectEqualsObjectWhenImplementingIequatableTitle">
+            <summary>
+              Looks up a localized string similar to Override Object.Equals(object) when implementing Iequatable.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.RemoveDeletedTypesAndMembersFromTheDeclaredAPIDescription">
+            <summary>
+              Looks up a localized string similar to When removing a public type or member the corresponding entry in PublicAPI.txt should also be removed. This draws attention to API changes in the code reviews and source control history, and helps prevent breaking changes..
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.RemoveDeletedTypesAndMembersFromTheDeclaredAPIMessage">
+            <summary>
+              Looks up a localized string similar to Remove deleted types and members from the declared API.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.RemoveDeletedTypesAndMembersFromTheDeclaredAPITitle">
+            <summary>
+              Looks up a localized string similar to Remove deleted types and members from the declared API.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.SymbolDeclaredEventMustBeGeneratedForSourceSymbolsDescription">
+            <summary>
+              Looks up a localized string similar to Compilation event queue is required to generate symbol declared events for all declared source symbols. Hence, every source symbol type or one of it&apos;s base types must generate a symbol declared event..
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.SymbolDeclaredEventMustBeGeneratedForSourceSymbolsMessage">
+            <summary>
+              Looks up a localized string similar to SymbolDeclaredEvent must be generated for source symbols.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.SymbolDeclaredEventMustBeGeneratedForSourceSymbolsTitle">
+            <summary>
+              Looks up a localized string similar to SymbolDeclaredEvent must be generated for source symbols.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.TheContentsOfThePublicAPIFilesAreInvalidDescription">
+            <summary>
+              Looks up a localized string similar to #N/A.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.TheContentsOfThePublicAPIFilesAreInvalidMessage">
+            <summary>
+              Looks up a localized string similar to The contents of the public API files are invalid.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.TheContentsOfThePublicAPIFilesAreInvalidTitle">
+            <summary>
+              Looks up a localized string similar to The contents of the public API files are invalid.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.UseSpecializedCollectionsEmptyEnumerableDescription">
+            <summary>
+              Looks up a localized string similar to #N/A.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.UseSpecializedCollectionsEmptyEnumerableMessage">
+            <summary>
+              Looks up a localized string similar to Use SpecializedCollections.EmptyEnumerable().
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.UseSpecializedCollectionsEmptyEnumerableTitle">
+            <summary>
+              Looks up a localized string similar to Use SpecializedCollections.EmptyEnumerable().
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.UseSpecializedCollectionsSingletonEnumerableDescription">
+            <summary>
+              Looks up a localized string similar to #N/A.
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.UseSpecializedCollectionsSingletonEnumerableMessage">
+            <summary>
+              Looks up a localized string similar to Use SpecializedCollections.SingletonEnumerable().
+            </summary>
+        </member>
+        <member name="P:Roslyn.Diagnostics.Analyzers.RoslynDiagnosticsAnalyzersResources.UseSpecializedCollectionsSingletonEnumerableTitle">
+            <summary>
+              Looks up a localized string similar to Use SpecializedCollections.SingletonEnumerable().
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.UseSpecializedCollectionsEmptyEnumerableAnalyzer">
+            <summary>
+            RS0001: Use SpecializedCollections.EmptyEnumerable()
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.UseSpecializedCollectionsEmptyEnumerableFixer">
+            <summary>
+            RS0001: Use SpecializedCollections.EmptyEnumerable()
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.UseSpecializedCollectionsSingletonEnumerableAnalyzer">
+            <summary>
+            RS0002: Use SpecializedCollections.SingletonEnumerable()
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.UseSpecializedCollectionsSingletonEnumerableFixer">
+            <summary>
+            RS0002: Use SpecializedCollections.SingletonEnumerable()
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.InvokeTheCorrectPropertyToEnsureCorrectUseSiteDiagnosticsAnalyzer">
+            <summary>
+            RS0004: Invoke the correct property to ensure correct use site diagnostics.
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.InvokeTheCorrectPropertyToEnsureCorrectUseSiteDiagnosticsFixer">
+            <summary>
+            RS0004: Invoke the correct property to ensure correct use site diagnostics.
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.DoNotUseGenericCodeActionCreateToCreateCodeActionAnalyzer">
+            <summary>
+            RS0005: Do not use generic CodeAction.Create to create CodeAction
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.DoNotUseGenericCodeActionCreateToCreateCodeActionFixer">
+            <summary>
+            RS0005: Do not use generic CodeAction.Create to create CodeAction
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.OverrideObjectEqualsObjectWhenImplementingIequatableAnalyzer">
+            <summary>
+            RS0009: Override Object.Equals(object) when implementing Iequatable
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.OverrideObjectEqualsObjectWhenImplementingIequatableFixer">
+            <summary>
+            RS0009: Override Object.Equals(object) when implementing Iequatable
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.DoNotInvokeDiagnosticDescriptorAnalyzer">
+            <summary>
+            RS0013: Do not invoke Diagnostic.Descriptor
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.DoNotInvokeDiagnosticDescriptorFixer">
+            <summary>
+            RS0013: Do not invoke Diagnostic.Descriptor
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.AddPublicTypesAndMembersToTheDeclaredAPIAnalyzer">
+            <summary>
+            RS0016: Add public types and members to the declared API
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.AddPublicTypesAndMembersToTheDeclaredAPIFixer">
+            <summary>
+            RS0016: Add public types and members to the declared API
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.RemoveDeletedTypesAndMembersFromTheDeclaredAPIAnalyzer">
+            <summary>
+            RS0017: Remove deleted types and members from the declared API
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.RemoveDeletedTypesAndMembersFromTheDeclaredAPIFixer">
+            <summary>
+            RS0017: Remove deleted types and members from the declared API
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.SymbolDeclaredEventMustBeGeneratedForSourceSymbolsAnalyzer">
+            <summary>
+            RS0019: SymbolDeclaredEvent must be generated for source symbols
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.SymbolDeclaredEventMustBeGeneratedForSourceSymbolsFixer">
+            <summary>
+            RS0019: SymbolDeclaredEvent must be generated for source symbols
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.TheContentsOfThePublicAPIFilesAreInvalidAnalyzer">
+            <summary>
+            RS0024: The contents of the public API files are invalid
+            </summary>
+        </member>
+        <member name="T:Roslyn.Diagnostics.Analyzers.TheContentsOfThePublicAPIFilesAreInvalidFixer">
+            <summary>
+            RS0024: The contents of the public API files are invalid
+            </summary>
+        </member>
+    </members>
+</doc>
