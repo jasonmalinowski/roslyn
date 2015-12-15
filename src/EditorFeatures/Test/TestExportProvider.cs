@@ -38,22 +38,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests
         }
 
         [ThreadStatic]
-        private static Lazy<ExportProvider> t_lazyExportProviderWithCSharpAndVisualBasic;
-
-        public static ExportProvider ExportProviderWithCSharpAndVisualBasic
-        {
-            get
-            {
-                if (t_lazyExportProviderWithCSharpAndVisualBasic == null)
-                {
-                    t_lazyExportProviderWithCSharpAndVisualBasic = new Lazy<ExportProvider>(CreateExportProviderWithCSharpAndVisualBasic);
-                }
-
-                return t_lazyExportProviderWithCSharpAndVisualBasic.Value;
-            }
-        }
-
-        [ThreadStatic]
         private static Lazy<ComposableCatalog> t_lazyMinimumCatalogWithCSharpAndVisualBasic;
 
         public static ComposableCatalog MinimumCatalogWithCSharpAndVisualBasic

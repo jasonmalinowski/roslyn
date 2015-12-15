@@ -60,34 +60,32 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
             }
         }
 
-        public static Task<TestWorkspace> CreateWorkspaceAsync(string xmlDefinition, bool completed = true, bool openDocuments = true, ExportProvider exportProvider = null)
+        public static Task<TestWorkspace> CreateWorkspaceAsync(string xmlDefinition, ExportProvider exportProvider, bool completed = true, bool openDocuments = true)
         {
-            return CreateWorkspaceAsync(XElement.Parse(xmlDefinition), completed, openDocuments, exportProvider);
+            return CreateWorkspaceAsync(XElement.Parse(xmlDefinition), exportProvider, completed, openDocuments);
         }
 
         public static TestWorkspace CreateWorkspace(
             XElement workspaceElement,
+            ExportProvider exportProvider,
             bool completed = true,
             bool openDocuments = true,
-            ExportProvider exportProvider = null,
             string workspaceKind = null)
         {
-            return CreateWorkspaceAsync(workspaceElement, completed, openDocuments, exportProvider, workspaceKind).WaitAndGetResult_CanCallOnBackground(CancellationToken.None);
+            return CreateWorkspaceAsync(workspaceElement, exportProvider, completed, openDocuments, workspaceKind).WaitAndGetResult_CanCallOnBackground(CancellationToken.None);
         }
 
         public static async Task<TestWorkspace> CreateWorkspaceAsync(
             XElement workspaceElement,
+            ExportProvider exportProvider,
             bool completed = true,
             bool openDocuments = true,
-            ExportProvider exportProvider = null,
             string workspaceKind = null)
         {
             if (workspaceElement.Name != WorkspaceElementName)
             {
                 throw new ArgumentException();
             }
-
-            exportProvider = exportProvider ?? TestExportProvider.ExportProviderWithCSharpAndVisualBasic;
 
             var workspace = new TestWorkspace(exportProvider, workspaceKind);
 

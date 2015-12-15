@@ -39,11 +39,6 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
         private readonly BackgroundCompiler _backgroundCompiler;
         private readonly BackgroundParser _backgroundParser;
 
-        public TestWorkspace()
-            : this(TestExportProvider.ExportProviderWithCSharpAndVisualBasic, WorkspaceName)
-        {
-        }
-
         public TestWorkspace(ExportProvider exportProvider, string workspaceKind = null, bool disablePartialSolutions = true)
             : base(MefV1HostServices.Create(exportProvider.AsExportProvider()), workspaceKind ?? WorkspaceName)
         {
