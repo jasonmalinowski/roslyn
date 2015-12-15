@@ -7,9 +7,11 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Editor.Implementation.CommentSelection;
 using Microsoft.CodeAnalysis.Editor.Shared.Extensions;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Mef;
 using Microsoft.CodeAnalysis.Editor.UnitTests.Utilities;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.Text.Shared.Extensions;
+using Microsoft.VisualStudio.Composition;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Operations;
@@ -21,8 +23,15 @@ using Xunit;
 
 namespace Microsoft.CodeAnalysis.Editor.UnitTests.CommentSelection
 {
-    public class CommentUncommentSelectionCommandHandlerTests
+    public class CommentUncommentSelectionCommandHandlerTests : ICollectionFixture<CommonCSharpVisualBasicAndEditorExportProviderFixture>
     {
+        private readonly ExportProvider _exportProvider;
+
+        public CommentUncommentSelectionCommandHandlerTests(CommonCSharpVisualBasicAndEditorExportProviderFixture exportProviderFixture)
+        {
+            _exportProvider = exportProviderFixture.GetExportProvider();
+        }
+
         private class MockCommentUncommentService : AbstractCommentUncommentService
         {
             private readonly bool _supportBlockComments;
@@ -168,7 +177,7 @@ class Foo
     void M() { }
 }|end|
 ";
-            var textView = EditorFactory.CreateView(TestExportProvider.ExportProviderWithCSharpAndVisualBasic, code);
+            var textView = EditorFactory.CreateView(_exportProvider, code);
             var selectedSpans = SetupSelection(textView);
 
             var expectedChanges = new[]
@@ -506,53 +515,53 @@ class Foo
             UncommentSelection(code, Enumerable.Empty<TextChange>(), new Span(8, 0), supportBlockComments: true);
         }
 
-        private static void UncommentSelection(string code, IEnumerable<TextChange> expectedChanges, Span expectedSelectedSpan, bool supportBlockComments)
+        private void UncommentSelection(string code, IEnumerable<TextChange> expectedChanges, Span expectedSelectedSpan, bool supportBlockComments)
         {
             CommentOrUncommentSelection(code, expectedChanges, new[] { expectedSelectedSpan }, supportBlockComments, CommentUncommentSelectionCommandHandler.Operation.Uncomment);
         }
 
-        private static void UncommentSelection(string code, IEnumerable<TextChange> expectedChanges, IEnumerable<Span> expectedSelectedSpans, bool supportBlockComments)
+        private void UncommentSelection(string code, IEnumerable<TextChange> expectedChanges, IEnumerable<Span> expectedSelectedSpans, bool supportBlockComments)
         {
             CommentOrUncommentSelection(code, expectedChanges, expectedSelectedSpans, supportBlockComments, CommentUncommentSelectionCommandHandler.Operation.Uncomment);
         }
 
-        private static void CommentSelection(string code, IEnumerable<TextChange> expectedChanges, bool supportBlockComments)
+        private void CommentSelection(string code, IEnumerable<TextChange> expectedChanges, bool supportBlockComments)
         {
             CommentOrUncommentSelection(code, expectedChanges, null /*expectedSelectedSpans*/, supportBlockComments, CommentUncommentSelectionCommandHandler.Operation.Comment);
         }
 
-        private static void CommentSelection(string code, IEnumerable<TextChange> expectedChanges, IEnumerable<Span> expectedSelectedSpans, bool supportBlockComments)
+        private void CommentSelection(string code, IEnumerable<TextChange> expectedChanges, IEnumerable<Span> expectedSelectedSpans, bool supportBlockComments)
         {
             CommentOrUncommentSelection(code, expectedChanges, expectedSelectedSpans, supportBlockComments, CommentUncommentSelectionCommandHandler.Operation.Comment);
         }
 
-        private static void CommentSelection(ITextView textView, IEnumerable<TextChange> expectedChanges, IEnumerable<Span> expectedSelectedSpans, bool supportBlockComments)
+        private void CommentSelection(ITextView textView, IEnumerable<TextChange> expectedChanges, IEnumerable<Span> expectedSelectedSpans, bool supportBlockComments)
         {
             CommentOrUncommentSelection(textView, expectedChanges, expectedSelectedSpans, supportBlockComments, CommentUncommentSelectionCommandHandler.Operation.Comment);
         }
 
-        private static void CommentOrUncommentSelection(
+        private void CommentOrUncommentSelection(
             string code,
             IEnumerable<TextChange> expectedChanges,
             IEnumerable<Span> expectedSelectedSpans,
             bool supportBlockComments,
             CommentUncommentSelectionCommandHandler.Operation operation)
         {
-            var textView = EditorFactory.CreateView(TestExportProvider.ExportProviderWithCSharpAndVisualBasic, code);
+            var textView = EditorFactory.CreateView(_exportProvider, code);
             var selectedSpans = SetupSelection(textView);
 
             CommentOrUncommentSelection(textView, expectedChanges, expectedSelectedSpans, supportBlockComments, operation);
         }
 
-        private static void CommentOrUncommentSelection(
+        private void CommentOrUncommentSelection(
             ITextView textView,
             IEnumerable<TextChange> expectedChanges,
             IEnumerable<Span> expectedSelectedSpans,
             bool supportBlockComments,
             CommentUncommentSelectionCommandHandler.Operation operation)
         {
-            var textUndoHistoryRegistry = TestExportProvider.ExportProviderWithCSharpAndVisualBasic.GetExportedValue<ITextUndoHistoryRegistry>();
-            var editorOperationsFactory = TestExportProvider.ExportProviderWithCSharpAndVisualBasic.GetExportedValue<IEditorOperationsFactoryService>();
+            var textUndoHistoryRegistry = _exportProvider.GetExportedValue<ITextUndoHistoryRegistry>();
+            var editorOperationsFactory = _exportProvider.GetExportedValue<IEditorOperationsFactoryService>();
             var commandHandler = new CommentUncommentSelectionCommandHandler(TestWaitIndicator.Default, textUndoHistoryRegistry, editorOperationsFactory);
             var service = new MockCommentUncommentService(supportBlockComments);
 

@@ -1,8 +1,10 @@
 // Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
 using Microsoft.CodeAnalysis.Editor.Shared.Extensions;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Mef;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.Text.Shared.Extensions;
+using Microsoft.VisualStudio.Composition;
 using Microsoft.VisualStudio.Text;
 using Roslyn.Test.EditorUtilities;
 using Roslyn.Test.Utilities;
@@ -10,8 +12,15 @@ using Xunit;
 
 namespace Microsoft.CodeAnalysis.Editor.UnitTests.Extensions
 {
-    public class ITextSnapshotLineExtensionsTests
+    public class ITextSnapshotLineExtensionsTests : ICollectionFixture<CommonCSharpVisualBasicAndEditorExportProviderFixture>
     {
+        private readonly ExportProvider _exportProvider;
+
+        public ITextSnapshotLineExtensionsTests(CommonCSharpVisualBasicAndEditorExportProviderFixture exportProviderFixture)
+        {
+            _exportProvider = exportProviderFixture.GetExportProvider();
+        }
+
         [WpfFact]
         public void GetFirstNonWhitespacePosition_EmptyLineReturnsNull()
         {
@@ -182,7 +191,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Extensions
 
         private ITextSnapshotLine GetLine(string codeLine)
         {
-            var snapshot = EditorFactory.CreateBuffer(TestExportProvider.ExportProviderWithCSharpAndVisualBasic, codeLine).CurrentSnapshot;
+            var snapshot = EditorFactory.CreateBuffer(_exportProvider, codeLine).CurrentSnapshot;
             return snapshot.GetLineFromLineNumber(0);
         }
 
