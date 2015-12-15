@@ -291,7 +291,6 @@
     <Compile Include="FindReferences\FindReferencesCommandHandlerTests.cs" />
     <Compile Include="FindReferences\MockReferencedSymbolsPresenter.cs" />
     <Compile Include="KeywordHighlighting\AbstractKeywordHighlighterTests.cs" />
-    <Compile Include="LineSeparators\AdornmentManagerTests.cs" />
     <Compile Include="LinkedFiles\LinkedFileDiffMergingEditorTests.cs" />
     <Compile Include="MetadataAsSource\AbstractMetadataAsSourceTests.cs" />
     <Compile Include="MetadataAsSource\AbstractMetadataAsSourceTests.TestContext.cs" />
