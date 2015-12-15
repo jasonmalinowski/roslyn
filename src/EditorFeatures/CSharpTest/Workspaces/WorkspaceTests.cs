@@ -152,7 +152,7 @@ namespace Microsoft.CodeAnalysis.UnitTests.Workspaces
             {
                 var solution = workspace.CurrentSolution;
 
-                var document = new TestHostDocument(
+                var document = new TestHostDocument(workspace.ExportProvider,
 @"#if FOO
 class C { }
 #else
@@ -179,7 +179,7 @@ class D { }
             {
                 var solution = workspace.CurrentSolution;
 
-                var document = new TestHostDocument(
+                var document = new TestHostDocument(workspace.ExportProvider,
 @"#if FOO
 class C { }
 #else
@@ -327,7 +327,7 @@ class D { }
             {
                 var solution = workspace.CurrentSolution;
 
-                var document = new TestHostDocument(string.Empty);
+                var document = new TestHostDocument(workspace.ExportProvider, string.Empty);
                 var project1 = new TestHostProject(workspace, document, name: "project1");
 
                 workspace.AddTestProject(project1);
@@ -347,7 +347,7 @@ class D { }
             {
                 var solution = workspace.CurrentSolution;
 
-                var document = new TestHostDocument(string.Empty);
+                var document = new TestHostDocument(workspace.ExportProvider, string.Empty);
                 var project1 = new TestHostProject(workspace, document, name: "project1");
 
                 workspace.AddTestProject(project1);
@@ -364,7 +364,7 @@ class D { }
             {
                 var solution = workspace.CurrentSolution;
 
-                var document = new TestHostDocument(string.Empty);
+                var document = new TestHostDocument(workspace.ExportProvider, string.Empty);
                 var project1 = new TestHostProject(workspace, document, name: "project1");
 
                 workspace.AddTestProject(project1);
@@ -384,7 +384,7 @@ class D { }
             {
                 var solution = workspace.CurrentSolution;
 
-                var document = new TestHostDocument(@"class C { }");
+                var document = new TestHostDocument(workspace.ExportProvider, @"class C { }");
                 var project1 = new TestHostProject(workspace, document, name: "project1");
 
                 workspace.AddTestProject(project1);
@@ -405,10 +405,10 @@ class D { }
             {
                 var solution = workspace.CurrentSolution;
 
-                var document1 = new TestHostDocument(@"public class C { }");
+                var document1 = new TestHostDocument(workspace.ExportProvider, @"public class C { }");
                 var project1 = new TestHostProject(workspace, document1, name: "project1");
 
-                var document2 = new TestHostDocument(@"class D : C { }");
+                var document2 = new TestHostDocument(workspace.ExportProvider, @"class D : C { }");
                 var project2 = new TestHostProject(workspace, document2, name: "project2", projectReferences: new[] { project1 });
 
                 workspace.AddTestProject(project1);
@@ -431,10 +431,10 @@ class D { }
             {
                 var solution = workspace.CurrentSolution;
 
-                var document1 = new TestHostDocument(@"public class C { }");
+                var document1 = new TestHostDocument(workspace.ExportProvider, @"public class C { }");
                 var project1 = new TestHostProject(workspace, document1, name: "project1");
 
-                var document2 = new TestHostDocument("Public Class D \r\n  Inherits C\r\nEnd Class");
+                var document2 = new TestHostDocument(workspace.ExportProvider, "Public Class D \r\n  Inherits C\r\nEnd Class");
                 var project2 = new TestHostProject(workspace, document2, language: LanguageNames.VisualBasic, name: "project2", projectReferences: new[] { project1 });
 
                 workspace.AddTestProject(project1);
@@ -457,10 +457,10 @@ class D { }
             {
                 var solutionX = workspace.CurrentSolution;
 
-                var document1 = new TestHostDocument(@"public class C { }");
+                var document1 = new TestHostDocument(workspace.ExportProvider, @"public class C { }");
                 var project1 = new TestHostProject(workspace, document1, name: "project1");
 
-                var document2 = new TestHostDocument("Public Class D \r\n  Inherits C\r\nEnd Class");
+                var document2 = new TestHostDocument(workspace.ExportProvider, "Public Class D \r\n  Inherits C\r\nEnd Class");
                 var project2 = new TestHostProject(workspace, document2, language: LanguageNames.VisualBasic, name: "project2", projectReferences: new[] { project1 });
 
                 workspace.AddTestProject(project1);
@@ -503,10 +503,10 @@ class D { }
             {
                 var solutionX = workspace.CurrentSolution;
 
-                var document1 = new TestHostDocument(@"public class C { }");
+                var document1 = new TestHostDocument(workspace.ExportProvider, @"public class C { }");
                 var project1 = new TestHostProject(workspace, document1, name: "project1");
 
-                var document2 = new TestHostDocument("Public Class D \r\n  Inherits C\r\nEnd Class");
+                var document2 = new TestHostDocument(workspace.ExportProvider, "Public Class D \r\n  Inherits C\r\nEnd Class");
                 var project2 = new TestHostProject(workspace, document2, language: LanguageNames.VisualBasic, name: "project2", projectReferences: new[] { project1 });
 
                 workspace.AddTestProject(project1);
@@ -559,10 +559,10 @@ class D { }
             {
                 var solutionX = workspace.CurrentSolution;
 
-                var document1 = new TestHostDocument(@"public class C { }");
+                var document1 = new TestHostDocument(workspace.ExportProvider, @"public class C { }");
                 var project1 = new TestHostProject(workspace, document1, name: "project1");
 
-                var document2 = new TestHostDocument("Public Class D \r\n  Inherits C\r\nEnd Class");
+                var document2 = new TestHostDocument(workspace.ExportProvider, "Public Class D \r\n  Inherits C\r\nEnd Class");
                 var project2 = new TestHostProject(workspace, document2, language: LanguageNames.VisualBasic, name: "project2", projectReferences: new[] { project1 });
 
                 workspace.AddTestProject(project1);
@@ -624,7 +624,7 @@ class D { }
             {
                 var solution = workspace.CurrentSolution;
 
-                var document = new TestHostDocument(string.Empty);
+                var document = new TestHostDocument(workspace.ExportProvider, string.Empty);
                 var project1 = new TestHostProject(workspace, document, name: "project1");
 
                 workspace.AddTestProject(project1);
@@ -652,7 +652,7 @@ class D { }
                 var startText = "public class C { }";
                 var newText = "public class D { }";
 
-                var document = new TestHostDocument(startText);
+                var document = new TestHostDocument(workspace.ExportProvider, startText);
                 var project1 = new TestHostProject(workspace, document, name: "project1");
 
                 workspace.AddTestProject(project1);
@@ -687,7 +687,7 @@ class D { }
                 var doc1Text = "public class C { }";
                 var doc2Text = "public class D { }";
 
-                var document = new TestHostDocument(doc1Text);
+                var document = new TestHostDocument(workspace.ExportProvider, doc1Text);
                 var project1 = new TestHostProject(workspace, document, name: "project1");
 
                 workspace.AddTestProject(project1);
@@ -710,7 +710,7 @@ class D { }
             {
                 var doc1Text = "public class C { }";
 
-                var document = new TestHostDocument(doc1Text);
+                var document = new TestHostDocument(workspace.ExportProvider, doc1Text);
                 var project1 = new TestHostProject(workspace, document, name: "project1");
 
                 workspace.AddTestProject(project1);
@@ -732,7 +732,7 @@ class D { }
             using (var workspace = CreateWorkspace())
             {
                 var doc1Text = "public class C { }";
-                var document = new TestHostDocument(doc1Text);
+                var document = new TestHostDocument(workspace.ExportProvider, doc1Text);
                 var project1 = new TestHostProject(workspace, document, name: "project1");
                 var longEventTimeout = TimeSpan.FromMinutes(5);
                 var shortEventTimeout = TimeSpan.FromSeconds(5);
@@ -797,8 +797,8 @@ class D { }
         {
             using (var workspace = CreateWorkspace())
             {
-                var document = new TestHostDocument("public class C { }");
-                var additionalDoc = new TestHostDocument("some text");
+                var document = new TestHostDocument(workspace.ExportProvider, "public class C { }");
+                var additionalDoc = new TestHostDocument(workspace.ExportProvider, "some text");
                 var project1 = new TestHostProject(workspace, name: "project1", documents: new[] { document }, additionalDocuments: new[] { additionalDoc });
 
                 workspace.AddTestProject(project1);
@@ -825,8 +825,8 @@ class D { }
             {
                 var startText = @"<setting value = ""foo""";
                 var newText = @"<setting value = ""foo1""";
-                var document = new TestHostDocument("public class C { }");
-                var additionalDoc = new TestHostDocument(startText);
+                var document = new TestHostDocument(workspace.ExportProvider, "public class C { }");
+                var additionalDoc = new TestHostDocument(workspace.ExportProvider, startText);
                 var project1 = new TestHostProject(workspace, name: "project1", documents: new[] { document }, additionalDocuments: new[] { additionalDoc });
 
                 workspace.AddTestProject(project1);
@@ -858,8 +858,8 @@ class D { }
             using (var workspace = CreateWorkspace())
             {
                 var startText = @"<setting value = ""foo""";
-                var document = new TestHostDocument("public class C { }");
-                var additionalDoc = new TestHostDocument(startText);
+                var document = new TestHostDocument(workspace.ExportProvider, "public class C { }");
+                var additionalDoc = new TestHostDocument(workspace.ExportProvider, startText);
                 var project1 = new TestHostProject(workspace, name: "project1", documents: new[] { document }, additionalDocuments: new[] { additionalDoc });
 
                 workspace.AddTestProject(project1);
@@ -889,8 +889,8 @@ class D { }
             using (var workspace = CreateWorkspace())
             {
                 var startText = @"<setting value = ""foo""";
-                var document = new TestHostDocument("public class C { }");
-                var additionalDoc = new TestHostDocument(startText, "original.config");
+                var document = new TestHostDocument(workspace.ExportProvider, "public class C { }");
+                var additionalDoc = new TestHostDocument(workspace.ExportProvider, startText, "original.config");
                 var project1 = new TestHostProject(workspace, name: "project1", documents: new[] { document }, additionalDocuments: new[] { additionalDoc });
                 workspace.AddTestProject(project1);
 
@@ -927,8 +927,8 @@ class D { }
             using (var workspace = CreateWorkspace())
             {
                 var startText = @"<setting value = ""foo""";
-                var document = new TestHostDocument("public class C { }");
-                var additionalDoc = new TestHostDocument(startText, "original.config");
+                var document = new TestHostDocument(workspace.ExportProvider, "public class C { }");
+                var additionalDoc = new TestHostDocument(workspace.ExportProvider, startText, "original.config");
                 var project1 = new TestHostProject(workspace, name: "project1", documents: new[] { document }, additionalDocuments: new[] { additionalDoc });
                 workspace.AddTestProject(project1);
 

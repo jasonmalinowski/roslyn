@@ -140,9 +140,9 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
             _loader = new TestDocumentLoader(this);
         }
 
-        public TestHostDocument(string text = "", string displayName = "", SourceCodeKind sourceCodeKind = SourceCodeKind.Regular, DocumentId id = null)
+        public TestHostDocument(ExportProvider exportProvider, string text = "", string displayName = "", SourceCodeKind sourceCodeKind = SourceCodeKind.Regular, DocumentId id = null)
         {
-            _exportProvider = TestExportProvider.ExportProviderWithCSharpAndVisualBasic;
+            _exportProvider = exportProvider;
             _id = id;
             _initialText = text;
             _name = displayName;

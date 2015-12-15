@@ -293,7 +293,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
         protected override void ApplyDocumentAdded(DocumentInfo info, SourceText text)
         {
             var hostProject = this.GetTestProject(info.Id.ProjectId);
-            var hostDocument = new TestHostDocument(text.ToString(), info.Name, info.SourceCodeKind, info.Id);
+            var hostDocument = new TestHostDocument(this.ExportProvider, text.ToString(), info.Name, info.SourceCodeKind, info.Id);
             hostProject.AddDocument(hostDocument);
             this.OnDocumentAdded(hostDocument.ToDocumentInfo());
         }
@@ -315,7 +315,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
         protected override void ApplyAdditionalDocumentAdded(DocumentInfo info, SourceText text)
         {
             var hostProject = this.GetTestProject(info.Id.ProjectId);
-            var hostDocument = new TestHostDocument(text.ToString(), info.Name, id: info.Id);
+            var hostDocument = new TestHostDocument(this.ExportProvider, text.ToString(), info.Name, id: info.Id);
             hostProject.AddAdditionalDocument(hostDocument);
             this.OnAdditionalDocumentAdded(hostDocument.ToDocumentInfo());
         }
@@ -426,7 +426,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces
             var languageServices = this.Services.GetLanguageServices(languageName);
 
             var projectionDocument = new TestHostDocument(
-                TestExportProvider.ExportProviderWithCSharpAndVisualBasic,
+                this.ExportProvider,
                 languageServices,
                 projectionBuffer,
                 path,
