@@ -1,8 +1,10 @@
 // Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
 using Microsoft.CodeAnalysis.Editor.Shared.Extensions;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Mef;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.Text.Shared.Extensions;
+using Microsoft.VisualStudio.Composition;
 using Microsoft.VisualStudio.Text;
 using Roslyn.Test.EditorUtilities;
 using Roslyn.Test.Utilities;
@@ -10,8 +12,15 @@ using Xunit;
 
 namespace Microsoft.CodeAnalysis.Editor.UnitTests.Extensions
 {
-    public class ITextSnapshotExtensionsTests
+    public class ITextSnapshotExtensionsTests : ICollectionFixture<CommonCSharpVisualBasicAndEditorExportProviderFixture>
     {
+        private readonly ExportProvider _exportProvider;
+
+        public ITextSnapshotExtensionsTests(CommonCSharpVisualBasicAndEditorExportProviderFixture exportProviderFixture)
+        {
+            _exportProvider = exportProviderFixture.GetExportProvider();
+        }
+
         [WpfFact]
         public void GetLeadingWhitespaceOfLineAtPosition_EmptyLineReturnsEmptyString()
         {
@@ -178,7 +187,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Extensions
 
         private string GetLeadingWhitespaceOfLineAtPosition(string code, int position)
         {
-            var snapshot = EditorFactory.CreateBuffer(TestExportProvider.ExportProviderWithCSharpAndVisualBasic, code).CurrentSnapshot;
+            var snapshot = EditorFactory.CreateBuffer(_exportProvider, code).CurrentSnapshot;
             return snapshot.GetLeadingWhitespaceOfLineAtPosition(position);
         }
 
@@ -198,7 +207,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Extensions
                 "bar3",
             };
             var code = string.Join("\n", lines);
-            var snapshot = EditorFactory.CreateBuffer(TestExportProvider.ExportProviderWithCSharpAndVisualBasic, code).CurrentSnapshot;
+            var snapshot = EditorFactory.CreateBuffer(_exportProvider, code).CurrentSnapshot;
             return snapshot;
         }
     }

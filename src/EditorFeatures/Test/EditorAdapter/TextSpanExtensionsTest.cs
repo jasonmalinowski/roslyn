@@ -3,16 +3,25 @@
 using System;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Editor.Shared.Extensions;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Mef;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.Text.Shared.Extensions;
+using Microsoft.VisualStudio.Composition;
 using Roslyn.Test.EditorUtilities;
 using Roslyn.Test.Utilities;
 using Xunit;
 
 namespace Microsoft.CodeAnalysis.Editor.UnitTests.EditorAdapter
 {
-    public class TextSpanExtensionsTest
+    public class TextSpanExtensionsTest : ICollectionFixture<CommonCSharpVisualBasicAndEditorExportProviderFixture>
     {
+        private readonly ExportProvider _exportProvider;
+
+        public TextSpanExtensionsTest(CommonCSharpVisualBasicAndEditorExportProviderFixture exportProviderFixture)
+        {
+            _exportProvider = exportProviderFixture.GetExportProvider();
+        }
+    
         [WpfFact]
         public void ConvertToSpan()
         {
@@ -31,7 +40,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.EditorAdapter
         [WpfFact]
         public void ConvertToSnapshotSpan1()
         {
-            var snapshot = EditorFactory.CreateBuffer(TestExportProvider.ExportProviderWithCSharpAndVisualBasic, new string('a', 10)).CurrentSnapshot;
+            var snapshot = EditorFactory.CreateBuffer(_exportProvider, new string('a', 10)).CurrentSnapshot;
             var textSpan = new TextSpan(0, 5);
             var ss = textSpan.ToSnapshotSpan(snapshot);
             Assert.Same(snapshot, ss.Snapshot);
@@ -42,7 +51,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.EditorAdapter
         [WpfFact]
         public void ConvertToSnapshotSpan2()
         {
-            var snapshot = EditorFactory.CreateBuffer(TestExportProvider.ExportProviderWithCSharpAndVisualBasic, new string('a', 10)).CurrentSnapshot;
+            var snapshot = EditorFactory.CreateBuffer(_exportProvider, new string('a', 10)).CurrentSnapshot;
             var textSpan = new TextSpan(0, 10);
             var ss = textSpan.ToSnapshotSpan(snapshot);
             Assert.Same(snapshot, ss.Snapshot);

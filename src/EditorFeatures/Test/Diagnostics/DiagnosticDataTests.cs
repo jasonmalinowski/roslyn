@@ -2,17 +2,26 @@
 
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Mef;
 using Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces;
 using Microsoft.CodeAnalysis.Test.Utilities;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.VisualStudio.Composition;
 using Roslyn.Test.Utilities;
 using Xunit;
 using Traits = Microsoft.CodeAnalysis.Test.Utilities.Traits;
 
 namespace Microsoft.CodeAnalysis.Editor.UnitTests.Diagnostics
 {
-    public class DiagnosticDataTests
+    public class DiagnosticDataTests : ICollectionFixture<CommonCSharpVisualBasicAndEditorExportProviderFixture>
     {
+        private readonly ExportProvider _exportProvider;
+
+        public DiagnosticDataTests(CommonCSharpVisualBasicAndEditorExportProviderFixture exportProviderFixture)
+        {
+            _exportProvider = exportProviderFixture.GetExportProvider();
+        }
+
         [WpfFact, Trait(Traits.Feature, Traits.Features.Diagnostics)]
         public void DiagnosticData_GetText()
         {
@@ -98,9 +107,9 @@ namespace B
             VerifyTextSpan(code, 3, 10, 3, 11, new TextSpan(28, 1));
         }
 
-        private static void VerifyTextSpan(string code, int startLine, int startColumn, int endLine, int endColumn, TextSpan span)
+        private void VerifyTextSpan(string code, int startLine, int startColumn, int endLine, int endColumn, TextSpan span)
         {
-            using (var workspace = new TestWorkspace(TestExportProvider.ExportProviderWithCSharpAndVisualBasic))
+            using (var workspace = new TestWorkspace(_exportProvider))
             {
                 var document = workspace.CurrentSolution.AddProject("TestProject", "TestProject", LanguageNames.CSharp).AddDocument("TestDocument", code);
 

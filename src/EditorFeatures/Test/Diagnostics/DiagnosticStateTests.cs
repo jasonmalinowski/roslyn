@@ -11,10 +11,12 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Diagnostics.EngineV1;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Mef;
 using Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces;
 using Microsoft.CodeAnalysis.Host;
 using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.VisualStudio.Composition;
 using Roslyn.Test.Utilities;
 using Roslyn.Utilities;
 using Xunit;
@@ -22,12 +24,19 @@ using Traits = Microsoft.CodeAnalysis.Test.Utilities.Traits;
 
 namespace Microsoft.CodeAnalysis.Editor.UnitTests.Diagnostics
 {
-    public class DiagnosticStateTests : TestBase
+    public class DiagnosticStateTests : TestBase, ICollectionFixture<CommonCSharpVisualBasicAndEditorExportProviderFixture>
     {
+        private readonly ExportProvider _exportProvider;
+
+        public DiagnosticStateTests(CommonCSharpVisualBasicAndEditorExportProviderFixture exportProviderFixture)
+        {
+            _exportProvider = exportProviderFixture.GetExportProvider();
+        }
+    
         [WpfFact, Trait(Traits.Feature, Traits.Features.Diagnostics)]
         public void SerializationTest_Document()
         {
-            using (var workspace = new TestWorkspace(TestExportProvider.ExportProviderWithCSharpAndVisualBasic, workspaceKind: "DiagnosticTest"))
+            using (var workspace = new TestWorkspace(_exportProvider, workspaceKind: "DiagnosticTest"))
             {
                 var utcTime = DateTime.UtcNow;
                 var version1 = VersionStamp.Create(utcTime);
@@ -72,7 +81,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Diagnostics
         [WpfFact, Trait(Traits.Feature, Traits.Features.Diagnostics)]
         public void SerializationTest_Project()
         {
-            using (var workspace = new TestWorkspace(TestExportProvider.ExportProviderWithCSharpAndVisualBasic, workspaceKind: "DiagnosticTest"))
+            using (var workspace = new TestWorkspace(_exportProvider, workspaceKind: "DiagnosticTest"))
             {
                 var utcTime = DateTime.UtcNow;
                 var version1 = VersionStamp.Create(utcTime);

@@ -4,7 +4,9 @@ using System;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Editor;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Mef;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.VisualStudio.Composition;
 using Microsoft.VisualStudio.Text;
 using Roslyn.Test.EditorUtilities;
 using Roslyn.Test.Utilities;
@@ -12,11 +14,18 @@ using Xunit;
 
 namespace Microsoft.CodeAnalysis.Editor.UnitTests.EditorAdapter
 {
-    public class TextSnapshotImplementationTest
+    public class TextSnapshotImplementationTest : ICollectionFixture<CommonCSharpVisualBasicAndEditorExportProviderFixture>
     {
+        private readonly ExportProvider _exportProvider;
+
+        public TextSnapshotImplementationTest(CommonCSharpVisualBasicAndEditorExportProviderFixture exportProviderFixture)
+        {
+            _exportProvider = exportProviderFixture.GetExportProvider();
+        }
+
         private Tuple<ITextSnapshot, SourceText> Create(params string[] lines)
         {
-            var buffer = EditorFactory.CreateBuffer(TestExportProvider.ExportProviderWithCSharpAndVisualBasic, lines);
+            var buffer = EditorFactory.CreateBuffer(_exportProvider, lines);
             var text = buffer.CurrentSnapshot.AsText();
             return Tuple.Create(buffer.CurrentSnapshot, text);
         }

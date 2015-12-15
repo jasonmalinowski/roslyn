@@ -2,7 +2,9 @@
 
 using System.Linq;
 using Microsoft.CodeAnalysis.Editor.Shared.Tagging;
+using Microsoft.CodeAnalysis.Editor.UnitTests.Mef;
 using Microsoft.CodeAnalysis.Text;
+using Microsoft.VisualStudio.Composition;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Roslyn.Test.EditorUtilities;
@@ -11,11 +13,18 @@ using Xunit;
 
 namespace Microsoft.CodeAnalysis.Editor.UnitTests.Tagging
 {
-    public class TagSpanIntervalTreeTests
+    public class TagSpanIntervalTreeTests : ICollectionFixture<CommonCSharpVisualBasicAndEditorExportProviderFixture>
     {
+        private readonly ExportProvider _exportProvider;
+
+        public TagSpanIntervalTreeTests(CommonCSharpVisualBasicAndEditorExportProviderFixture exportProviderFixture)
+        {
+            _exportProvider = exportProviderFixture.GetExportProvider();
+        }
+
         private TagSpanIntervalTree<ITextMarkerTag> CreateTree(string text, params Span[] spans)
         {
-            var buffer = EditorFactory.CreateBuffer(TestExportProvider.ExportProviderWithCSharpAndVisualBasic, text);
+            var buffer = EditorFactory.CreateBuffer(_exportProvider, text);
             var tags = spans.Select(s => new TagSpan<ITextMarkerTag>(new SnapshotSpan(buffer.CurrentSnapshot, s), new TextMarkerTag(string.Empty)));
             return new TagSpanIntervalTree<ITextMarkerTag>(buffer, SpanTrackingMode.EdgeInclusive, tags);
         }
