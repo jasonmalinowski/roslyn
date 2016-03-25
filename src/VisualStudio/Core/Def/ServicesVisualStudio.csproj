@@ -169,6 +169,7 @@
     <Compile Include="Packaging\PackageSearchService.RemoteControlService.cs" />
     <Compile Include="Packaging\PackageSearchServiceFactory.cs" />
     <Compile Include="Packaging\Patching\Delta.cs" />
+    <Compile Include="Packaging\RoslynHandshakeContract.cs" />
     <Compile Include="RoslynPackage.cs" />
     <Compile Include="ServicesVSResources.Designer.cs">
       <AutoGen>True</AutoGen>
