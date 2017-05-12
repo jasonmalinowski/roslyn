@@ -71,6 +71,11 @@
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- include schema info for PublicAPI items -->
+    <PropertyPageSchema Include="$(MSBuildThisFileDirectory)\ProjectItemsSchema.xaml" />
+  </ItemGroup>
+
   <!-- Windows specific settings -->
   <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
     <BaseNuGetRuntimeIdentifier>win7</BaseNuGetRuntimeIdentifier>
