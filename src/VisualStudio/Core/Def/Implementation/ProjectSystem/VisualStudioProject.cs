@@ -1000,10 +1000,10 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.ProjectSystem
                     _sourceTextContainersToDocumentIds = _sourceTextContainersToDocumentIds.RemoveKey(textContainer);
 
                     // if the TextContainer had a full path provided, remove it from the map.
-                    var (fullPath, _) = _documentPathsToDocumentIds.Where(kv => kv.Value == documentId).FirstOrDefault();
-                    if (fullPath != null)
+                    var entry = _documentPathsToDocumentIds.Where(kv => kv.Value == documentId).FirstOrDefault();
+                    if (entry.Key != null)
                     {
-                        _documentPathsToDocumentIds.Remove(fullPath);
+                        _documentPathsToDocumentIds.Remove(entry.Key);
                     }
 
                     // There are two cases:
