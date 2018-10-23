@@ -2,12 +2,10 @@
 
 using System;
 using System.Threading.Tasks;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.DocumentHighlighting;
 using Microsoft.CodeAnalysis.FindUsages;
 using Microsoft.CodeAnalysis.PooledObjects;
 using Microsoft.VisualStudio.Shell.FindAllReferences;
-using Roslyn.Utilities;
 
 namespace Microsoft.VisualStudio.LanguageServices.FindUsages
 {
@@ -84,9 +82,10 @@ namespace Microsoft.VisualStudio.LanguageServices.FindUsages
                 var documentSpan = definition.SourceSpans[0];
                 var (guid, projectName, sourceText) = await GetGuidAndProjectNameAndSourceTextAsync(documentSpan.Document).ConfigureAwait(false);
 
+                var lineText = AbstractDocumentSpanEntry.GetLineContainingPosition(sourceText, documentSpan.SourceSpan.Start);
                 var mappedDocumentSpan = await AbstractDocumentSpanEntry.MapAndGetFirstAsync(documentSpan, sourceText, CancellationToken).ConfigureAwait(false);
 
-                return new DefinitionItemEntry(this, definitionBucket, projectName, guid, documentSpan, sourceText, mappedDocumentSpan);
+                return new DefinitionItemEntry(this, definitionBucket, projectName, guid, lineText, mappedDocumentSpan);
             }
         }
     }

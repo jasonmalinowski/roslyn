@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.DocumentHighlighting;
 using Microsoft.CodeAnalysis.Editor.FindUsages;
 using Microsoft.CodeAnalysis.FindUsages;
+using Microsoft.CodeAnalysis.Host;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.VisualStudio.Shell.FindAllReferences;
 using Microsoft.VisualStudio.Shell.TableControl;
@@ -268,15 +269,34 @@ namespace Microsoft.VisualStudio.LanguageServices.FindUsages
             {
                 var document = documentSpan.Document;
                 var (guid, projectName, sourceText) = await GetGuidAndProjectNameAndSourceTextAsync(document).ConfigureAwait(false);
-
-                var classifiedSpansAndHighlightSpan =
-                    await ClassifiedSpansAndHighlightSpanFactory.ClassifyAsync(documentSpan, CancellationToken).ConfigureAwait(false);
+                var excerptResult = await ExcerptAsync(sourceText, documentSpan).ConfigureAwait(false);
 
                 var mappedDocumentSpan = await AbstractDocumentSpanEntry.MapAndGetFirstAsync(documentSpan, sourceText, CancellationToken).ConfigureAwait(false);
 
                 return new DocumentSpanEntry(
                     this, definitionBucket, spanKind, projectName,
-                    guid, documentSpan, sourceText, mappedDocumentSpan, classifiedSpansAndHighlightSpan);
+                    guid, mappedDocumentSpan, excerptResult);
+            }
+
+            private async Task<ExcerptResult> ExcerptAsync(SourceText sourceText, DocumentSpan documentSpan)
+            {
+                var excerptService = documentSpan.Document.Services.GetService<IDocumentExcerptService>();
+                if (excerptService != null)
+                {
+                    var result = await excerptService.TryExcerptAsync(documentSpan.Document, documentSpan.SourceSpan, ExcerptMode.SingleLine, CancellationToken).ConfigureAwait(false);
+                    if (result != null)
+                    {
+                        return result.Value;
+                    }
+                }
+
+                var classificationResult = await ClassifiedSpansAndHighlightSpanFactory.ClassifyAsync(documentSpan, CancellationToken).ConfigureAwait(false);
+                return new ExcerptResult(
+                    sourceText,
+                    classificationResult.HighlightSpan,
+                    classificationResult.ClassifiedSpans,
+                    documentSpan.Document,
+                    documentSpan.SourceSpan);
             }
 
             private TextSpan GetRegionSpanForReference(SourceText sourceText, TextSpan referenceSpan)

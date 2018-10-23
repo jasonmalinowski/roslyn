@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Windows.Documents;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Editor.Shared.Extensions;
 using Microsoft.CodeAnalysis.Host;
 using Microsoft.CodeAnalysis.Text;
@@ -24,11 +23,9 @@ namespace Microsoft.VisualStudio.LanguageServices.FindUsages
                 RoslynDefinitionBucket definitionBucket,
                 string documentName,
                 Guid projectGuid,
-                DocumentSpan originalDocumentSpan,
-                SourceText originalSourceText,
+                SourceText lineText,
                 MappedSpanResult mappedSpanResult)
-                : base(context, definitionBucket, documentName, projectGuid,
-                      originalDocumentSpan, originalSourceText, mappedSpanResult)
+                : base(context, definitionBucket, documentName, projectGuid, lineText, mappedSpanResult)
             {
             }
 

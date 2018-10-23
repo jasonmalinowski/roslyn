@@ -30,9 +30,7 @@ namespace Microsoft.VisualStudio.LanguageServices.FindUsages
             private readonly string _projectName;
             private readonly object _boxedProjectGuid;
 
-            private readonly DocumentSpan _originalDocumentSpan;
-            private readonly SourceText _originalSourceText;
-
+            private readonly SourceText _lineText;
             private readonly MappedSpanResult _mappedSpanResult;
 
             protected AbstractDocumentSpanEntry(
@@ -40,8 +38,7 @@ namespace Microsoft.VisualStudio.LanguageServices.FindUsages
                 RoslynDefinitionBucket definitionBucket,
                 string projectName,
                 Guid projectGuid,
-                DocumentSpan originalDocumentSpan,
-                SourceText originalSourceText,
+                SourceText lineText,
                 MappedSpanResult mappedSpanResult)
                 : base(definitionBucket)
             {
@@ -50,17 +47,11 @@ namespace Microsoft.VisualStudio.LanguageServices.FindUsages
                 _projectName = projectName;
                 _boxedProjectGuid = projectGuid;
 
-                _originalDocumentSpan = originalDocumentSpan;
-                _originalSourceText = originalSourceText;
-
+                _lineText = lineText;
                 _mappedSpanResult = mappedSpanResult;
             }
 
             protected StreamingFindUsagesPresenter Presenter => _context.Presenter;
-
-            protected SourceText SourceText => _originalSourceText;
-            protected Document Document => _originalDocumentSpan.Document;
-            protected TextSpan SourceSpan => _originalDocumentSpan.SourceSpan;
 
             protected override object GetValueWorker(string keyName)
             {
@@ -77,9 +68,7 @@ namespace Microsoft.VisualStudio.LanguageServices.FindUsages
                     case StandardTableKeyNames.ProjectGuid:
                         return _boxedProjectGuid;
                     case StandardTableKeyNames.Text:
-                        // return original text for now due to classification. otherwise, we can't classify something like razor
-                        // file correctly
-                        return _originalSourceText.Lines.GetLineFromPosition(_originalDocumentSpan.SourceSpan.Start).ToString().Trim();
+                        return _lineText.ToString();
                 }
 
                 return null;
@@ -104,7 +93,7 @@ namespace Microsoft.VisualStudio.LanguageServices.FindUsages
 
             public static async Task<MappedSpanResult> MapAndGetFirstAsync(DocumentSpan documentSpan, SourceText sourceText, CancellationToken cancellationToken)
             {
-                var service = documentSpan.Document.State.Services.GetService<ISpanMappingService>();
+                var service = documentSpan.Document.Services.GetService<ISpanMappingService>();
                 if (service == null)
                 {
                     return new MappedSpanResult(documentSpan.Document.FilePath, sourceText.Lines.GetLinePositionSpan(documentSpan.SourceSpan), documentSpan.SourceSpan);
@@ -119,6 +108,13 @@ namespace Microsoft.VisualStudio.LanguageServices.FindUsages
                 }
 
                 return result[0];
+            }
+
+            public static SourceText GetLineContainingPosition(SourceText text, int position)
+            {
+                var line = text.Lines.GetLineFromPosition(position);
+
+                return text.GetSubText(line.Span);
             }
         }
     }

@@ -45,7 +45,7 @@ namespace Microsoft.CodeAnalysis.Editor.QuickInfo
             _roleSet = roleSet ?? _textEditorFactoryService.NoRoles;
         }
 
-        public static ContentControl Create(
+        public static ViewHostingControl Create(
             IThreadingContext threadingContext,
             ImmutableArray<SnapshotSpan> spans,
             IProjectionBufferFactoryService projectionBufferFactoryService,
@@ -66,7 +66,7 @@ namespace Microsoft.CodeAnalysis.Editor.QuickInfo
             return content.Create();
         }
 
-        private ContentControl Create()
+        private ViewHostingControl Create()
         {
             AssertIsForeground();
 

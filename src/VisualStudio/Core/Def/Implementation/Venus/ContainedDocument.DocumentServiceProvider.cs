@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Classification;
+using Microsoft.CodeAnalysis.Editor;
 using Microsoft.CodeAnalysis.Editor.Shared.Extensions;
 using Microsoft.CodeAnalysis.Host;
 using Microsoft.CodeAnalysis.PooledObjects;
@@ -49,14 +50,16 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.Venus
                 return TextDocumentState.DefaultDocumentServiceProvider.Instance.GetService<TService>();
             }
 
-            private static async Task<IProjectionSnapshot> GetProjectSnapshotAsync(Document document, CancellationToken cancellationToken)
+            private static IProjectionSnapshot GetProjectSnapshot(SourceText sourceText)
+            {
+                return sourceText.FindCorrespondingEditorTextSnapshot() as IProjectionSnapshot;
+            }
+
+            private static void VerifyDocument(Document document)
             {
                 // only internal people should use this. so throw when mis-used
                 var containedDocument = TryGetContainedDocument(document.Id);
                 Contract.ThrowIfNull(containedDocument);
-
-                var sourceText = await document.GetTextAsync(cancellationToken).ConfigureAwait(false);
-                return sourceText.FindCorrespondingEditorTextSnapshot() as IProjectionSnapshot;
             }
 
             private class SpanMapper : ISpanMappingService
@@ -65,8 +68,11 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.Venus
                 {
                     // REVIEW: for now, we keep document here due to open file case, otherwise, we need to create new SpanMappingService for every char user types.
 
-                    var secondaryBufferSnapshot = await GetProjectSnapshotAsync(document, cancellationToken).ConfigureAwait(false);
-                    if (secondaryBufferSnapshot == null)
+                    VerifyDocument(document);
+                    var sourceText = await document.GetTextAsync(cancellationToken).ConfigureAwait(false);
+
+                    var projectionSnapshot = GetProjectSnapshot(sourceText);
+                    if (projectionSnapshot == null)
                     {
                         return default;
                     }
@@ -75,7 +81,7 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.Venus
                     foreach (var span in spans)
                     {
                         var result = default(MappedSpanResult?);
-                        foreach (var primarySpan in secondaryBufferSnapshot.MapToSourceSnapshots(span.ToSpan()))
+                        foreach (var primarySpan in projectionSnapshot.MapToSourceSnapshots(span.ToSpan()))
                         {
                             // this is from http://index/?query=MapSecondaryToPrimarySpan&rightProject=Microsoft.VisualStudio.Editor.Implementation&file=VsTextBufferCoordinatorAdapter.cs&line=177
                             // make sure we only consider one that's not split
@@ -105,76 +111,146 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.Venus
             {
                 public async Task<ExcerptResult?> TryExcerptAsync(Document document, TextSpan span, ExcerptMode mode, CancellationToken cancellationToken)
                 {
-                    // REVIEW: for now, we keep document here due to open file case, otherwise, we need to create new SpanMappingService for every char user types.
+                    VerifyDocument(document);
 
-                    var secondaryBufferSnapshot = await GetProjectSnapshotAsync(document, cancellationToken).ConfigureAwait(false);
-                    if (secondaryBufferSnapshot == null)
+                    // REVIEW: for now, we keep document here due to open file case, otherwise, we need to create new SpanMappingService for every char user types.
+                    var sourceText = await document.GetTextAsync(cancellationToken).ConfigureAwait(false);
+
+                    var projectionSnapshot = GetProjectSnapshot(sourceText);
+                    if (projectionSnapshot == null)
                     {
                         return null;
                     }
 
-                    var primarySpans = secondaryBufferSnapshot.MapToSourceSnapshots(span.ToSpan());
+                    var spanOnPrimarySnapshot = MapRoslynSpanToPrimarySpan(projectionSnapshot, span);
+                    if (spanOnPrimarySnapshot == null)
+                    {
+                        return null;
+                    }
+
+                    var contentSpanOnPrimarySnapshot = GetContentSpanFromPrimarySpan(mode, spanOnPrimarySnapshot.Value);
+                    if (contentSpanOnPrimarySnapshot == null)
+                    {
+                        // can't figure out span to extract content from
+                        return null;
+                    }
+
+                    var (content, spanOnContent) = GetContentAndMappedSpan(mode, spanOnPrimarySnapshot.Value, contentSpanOnPrimarySnapshot.Value);
+                    if (content == null)
+                    {
+                        return null;
+                    }
+
+                    var classifiedSpansOnContent = await GetClassifiedSpansOnContent(document, projectionSnapshot, contentSpanOnPrimarySnapshot.Value, cancellationToken);
+
+                    // the default implementation has no idea how to classify the primary snapshot
+                    return new ExcerptResult(content, spanOnContent, classifiedSpansOnContent, document, span);
+                }
+
+                private static async Task<ImmutableArray<ClassifiedSpan>> GetClassifiedSpansOnContent(Document document, IProjectionSnapshot projectionSnapshot, SnapshotSpan contentSpanOnPrimarySnapshot, CancellationToken cancellationToken)
+                {
+                    // map content span on the primary buffer to second buffer and for ones that can be mapped,
+                    // get classification for those portion on secondary buffer and convert span on those to
+                    // span on the content and create ClassifiedSpan
+                    var contentSpan = contentSpanOnPrimarySnapshot.Span.ToTextSpan();
+
+                    using (var pooledObject = SharedPools.Default<List<ClassifiedSpan>>().GetPooledObject())
+                    {
+                        var list = pooledObject.Object;
+
+                        foreach (var roslynSpan in projectionSnapshot.MapFromSourceSnapshot(contentSpanOnPrimarySnapshot))
+                        {
+                            var classifiedSpans = await EditorClassifier.GetClassifiedSpansAsync(document, roslynSpan.ToTextSpan(), cancellationToken).ConfigureAwait(false);
+                            if (classifiedSpans.IsDefault)
+                            {
+                                continue;
+                            }
+
+                            foreach (var classifiedSpan in classifiedSpans)
+                            {
+                                var mappedSpan = MapRoslynSpanToPrimarySpan(projectionSnapshot, classifiedSpan.TextSpan);
+                                if (mappedSpan == null)
+                                {
+                                    continue;
+                                }
+
+                                list.Add(new ClassifiedSpan(GetSpanOnContent(mappedSpan.Value.Span.ToTextSpan(), contentSpan), classifiedSpan.ClassificationType));
+                            }
+                        }
+
+                        // everything is mapped to content which always start from 0
+                        // classifier expects there is no gap between classification spans. any empty space
+                        // from the above classification call will be filled with "text"
+                        var builder = ArrayBuilder<ClassifiedSpan>.GetInstance();
+                        EditorClassifier.FillInClassifiedSpanGaps(startPosition: 0, list, builder);
+
+                        // add html after roslyn content if there is any
+                        if (builder.Count == 0)
+                        {
+                            // no roslyn code. add all as html code
+                            builder.Add(new ClassifiedSpan(new TextSpan(0, contentSpan.Length), ClassificationTypeNames.Text));
+                        }
+                        else
+                        {
+                            var lastSpan = builder[builder.Count - 1].TextSpan;
+                            if (lastSpan.End < contentSpan.Length)
+                            {
+                                builder.Add(new ClassifiedSpan(new TextSpan(lastSpan.End, contentSpan.Length - lastSpan.End), ClassificationTypeNames.Text));
+                            }
+                        }
+
+                        return builder.ToImmutableAndFree();
+                    }
+                }
+
+                private static SnapshotSpan? MapRoslynSpanToPrimarySpan(IProjectionSnapshot projectionBuffer, TextSpan span)
+                {
+                    var primarySpans = projectionBuffer.MapToSourceSnapshots(span.ToSpan());
                     if (primarySpans.Count != 1)
                     {
                         // default version doesn't support where span mapped multiple primary buffer spans
                         return null;
                     }
 
-                    var contentSpan = GetContentSpanFromPrimarySpan(mode, primarySpans[0]);
-                    if (contentSpan == null)
-                    {
-                        // can't figure out span to extract content from
-                        return null;
-                    }
-
-                    var (content, mappedSpan) = GetContentAndMappedSpan(mode, primarySpans[0], contentSpan.Value);
-                    if (content == null)
-                    {
-                        return null;
-                    }
-
-                    // TODO: map content span on the primary buffer to second buffer and for ones that can be mapped,
-                    //       get classification for those portion on secondary buffer and convert span on those to
-                    //       span on the content and create ClassifiedSpan
-
-                    // the default implementation has no idea how to classify the primary snapshot
-                    return new ExcerptResult(content, mappedSpan, ImmutableArray<ClassifiedSpan>.Empty, document, span);
+                    return primarySpans[0];
                 }
 
-                private static (SourceText, TextSpan) GetContentAndMappedSpan(ExcerptMode mode, SnapshotSpan primarySpan, TextSpan contentSpan)
+                private static (SourceText, TextSpan) GetContentAndMappedSpan(ExcerptMode mode, SnapshotSpan primarySpan, SnapshotSpan contentSpan)
                 {
                     var line = primarySpan.Start.GetContainingLine();
 
                     if (mode == ExcerptMode.SingleLine)
                     {
-                        return (line.Snapshot.AsText().GetSubText(contentSpan), GetSpanOnContent(primarySpan.Span.ToTextSpan(), contentSpan));
+                        return (line.Snapshot.AsText().GetSubText(contentSpan.Span.ToTextSpan()), GetSpanOnContent(primarySpan.Span.ToTextSpan(), contentSpan.Span.ToTextSpan()));
                     }
 
                     if (mode == ExcerptMode.Tooltip)
                     {
-                        return (line.Snapshot.AsText().GetSubText(contentSpan), GetSpanOnContent(primarySpan.Span.ToTextSpan(), contentSpan));
+                        return (line.Snapshot.AsText().GetSubText(contentSpan.Span.ToTextSpan()), GetSpanOnContent(primarySpan.Span.ToTextSpan(), contentSpan.Span.ToTextSpan()));
                     }
 
                     return (default, default);
                 }
 
-                private static TextSpan? GetContentSpanFromPrimarySpan(ExcerptMode mode, SnapshotSpan primarySpan)
+                private static SnapshotSpan? GetContentSpanFromPrimarySpan(ExcerptMode mode, SnapshotSpan primarySpan)
                 {
                     var line = primarySpan.Start.GetContainingLine();
 
                     if (mode == ExcerptMode.SingleLine)
                     {
                         // the line where primary span is on
-                        return line.Extent.Span.ToTextSpan();
+                        return line.Extent;
                     }
 
                     if (mode == ExcerptMode.Tooltip)
                     {
-                        // +-1 line of the line where primary span is on
-                        var startLine = line.Snapshot.GetLineFromLineNumber(Math.Min(0, line.LineNumber - 1));
-                        var endLine = line.Snapshot.GetLineFromLineNumber(Math.Max(line.Snapshot.LineCount - 1, line.LineNumber + 1));
+                        // +-3 line of the line where primary span is on
+                        const int AdditionalLineCountPerSide = 3;
 
-                        return TextSpan.FromBounds(startLine.Extent.Start.Position, endLine.Extent.End.Position);
+                        var startLine = line.Snapshot.GetLineFromLineNumber(Math.Max(0, line.LineNumber - AdditionalLineCountPerSide));
+                        var endLine = line.Snapshot.GetLineFromLineNumber(Math.Min(line.Snapshot.LineCount - 1, line.LineNumber + AdditionalLineCountPerSide));
+
+                        return new SnapshotSpan(line.Snapshot, Span.FromBounds(startLine.Extent.Start.Position, endLine.Extent.End.Position));
                     }
 
                     return default;
@@ -182,7 +258,7 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.Venus
 
                 private static TextSpan GetSpanOnContent(TextSpan targetSpan, TextSpan excerptSpan)
                 {
-                    return TextSpan.FromBounds(targetSpan.Start - excerptSpan.Start, targetSpan.Length);
+                    return new TextSpan(targetSpan.Start - excerptSpan.Start, targetSpan.Length);
                 }
             }
         }
