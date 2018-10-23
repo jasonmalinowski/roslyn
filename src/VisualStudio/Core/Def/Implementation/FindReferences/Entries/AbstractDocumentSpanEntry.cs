@@ -91,7 +91,7 @@ namespace Microsoft.VisualStudio.LanguageServices.FindUsages
 
             protected abstract IList<Inline> CreateLineTextInlines();
 
-            public static async Task<MappedSpanResult> MapAndGetFirstAsync(DocumentSpan documentSpan, SourceText sourceText, CancellationToken cancellationToken)
+            public static async Task<MappedSpanResult?> TryMapAndGetFirstAsync(DocumentSpan documentSpan, SourceText sourceText, CancellationToken cancellationToken)
             {
                 var service = documentSpan.Document.Services.GetService<ISpanMappingService>();
                 if (service == null)
@@ -99,15 +99,15 @@ namespace Microsoft.VisualStudio.LanguageServices.FindUsages
                     return new MappedSpanResult(documentSpan.Document.FilePath, sourceText.Lines.GetLinePositionSpan(documentSpan.SourceSpan), documentSpan.SourceSpan);
                 }
 
-                var result = await service.MapSpansAsync(
+                var results = await service.MapSpansAsync(
                     documentSpan.Document, SpecializedCollections.SingletonEnumerable(documentSpan.SourceSpan), cancellationToken).ConfigureAwait(false);
 
-                if (result.IsDefaultOrEmpty)
+                if (results.IsDefaultOrEmpty)
                 {
                     return new MappedSpanResult(documentSpan.Document.FilePath, sourceText.Lines.GetLinePositionSpan(documentSpan.SourceSpan), documentSpan.SourceSpan);
                 }
 
-                return result[0];
+                return results.FirstOrNullable(r => !r.IsDefault);
             }
 
             public static SourceText GetLineContainingPosition(SourceText text, int position)

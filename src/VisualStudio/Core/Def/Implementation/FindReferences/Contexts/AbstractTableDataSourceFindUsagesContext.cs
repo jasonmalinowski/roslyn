@@ -262,7 +262,7 @@ namespace Microsoft.VisualStudio.LanguageServices.FindUsages
                 return (guid, projectName, sourceText);
             }
 
-            protected async Task<Entry> CreateDocumentSpanEntryAsync(
+            protected async Task<Entry> TryCreateDocumentSpanEntryAsync(
                 RoslynDefinitionBucket definitionBucket,
                 DocumentSpan documentSpan,
                 HighlightSpanKind spanKind)
@@ -271,11 +271,15 @@ namespace Microsoft.VisualStudio.LanguageServices.FindUsages
                 var (guid, projectName, sourceText) = await GetGuidAndProjectNameAndSourceTextAsync(document).ConfigureAwait(false);
                 var excerptResult = await ExcerptAsync(sourceText, documentSpan).ConfigureAwait(false);
 
-                var mappedDocumentSpan = await AbstractDocumentSpanEntry.MapAndGetFirstAsync(documentSpan, sourceText, CancellationToken).ConfigureAwait(false);
+                var mappedDocumentSpan = await AbstractDocumentSpanEntry.TryMapAndGetFirstAsync(documentSpan, sourceText, CancellationToken).ConfigureAwait(false);
+                if (mappedDocumentSpan == null)
+                {
+                    return null;
+                }
 
                 return new DocumentSpanEntry(
                     this, definitionBucket, spanKind, projectName,
-                    guid, mappedDocumentSpan, excerptResult);
+                    guid, mappedDocumentSpan.Value, excerptResult);
             }
 
             private async Task<ExcerptResult> ExcerptAsync(SourceText sourceText, DocumentSpan documentSpan)
