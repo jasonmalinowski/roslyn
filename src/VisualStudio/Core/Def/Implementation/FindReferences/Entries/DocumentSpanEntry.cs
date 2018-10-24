@@ -45,7 +45,7 @@ namespace Microsoft.VisualStudio.LanguageServices.FindUsages
                       definitionBucket,
                       documentName,
                       projectGuid,
-                      excerptResult.Content,
+                      GetLineContainingPosition(excerptResult.Content, excerptResult.MappedSpan.Start),
                       mappedSpanResult)
             {
                 _spanKind = spanKind;
