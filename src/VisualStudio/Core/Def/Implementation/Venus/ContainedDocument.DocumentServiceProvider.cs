@@ -182,7 +182,9 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.Venus
                         // classifier expects there is no gap between classification spans. any empty space
                         // from the above classification call will be filled with "text"
                         var builder = ArrayBuilder<ClassifiedSpan>.GetInstance();
-                        EditorClassifier.FillInClassifiedSpanGaps(startPosition: 0, list, builder);
+
+                        var startPosition = GetNonWhitespaceStartPositionOnContent(contentSpanOnPrimarySnapshot);
+                        EditorClassifier.FillInClassifiedSpanGaps(startPosition, list, builder);
 
                         // add html after roslyn content if there is any
                         if (builder.Count == 0)
@@ -201,6 +203,19 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.Venus
 
                         return builder.ToImmutableAndFree();
                     }
+                }
+
+                private static int GetNonWhitespaceStartPositionOnContent(SnapshotSpan spanOnPrimarySnapshot)
+                {
+                    for (var i = spanOnPrimarySnapshot.Start.Position; i < spanOnPrimarySnapshot.End.Position; i++)
+                    {
+                        if (!char.IsWhiteSpace(spanOnPrimarySnapshot.Snapshot[i]))
+                        {
+                            return i - spanOnPrimarySnapshot.Start.Position;
+                        }
+                    }
+
+                    return spanOnPrimarySnapshot.Length;
                 }
 
                 private static SnapshotSpan? MapRoslynSpanToPrimarySpan(IProjectionSnapshot projectionBuffer, TextSpan span)
