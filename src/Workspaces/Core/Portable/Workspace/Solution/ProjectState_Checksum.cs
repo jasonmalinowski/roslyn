@@ -35,6 +35,7 @@ namespace Microsoft.CodeAnalysis
                 // sorted by ID so we have a consistent sort.
                 var documentChecksumsTasks = _documentStates.Select(pair => pair.Value.GetChecksumAsync(cancellationToken));
                 var additionalDocumentChecksumTasks = _additionalDocumentStates.Select(pair => pair.Value.GetChecksumAsync(cancellationToken));
+                var analyzerConfigDocumentChecksumTasks = _analyzerConfigDocumentStates.Select(pair => pair.Value.GetChecksumAsync(cancellationToken));
 
                 var serializer = _solutionServices.Workspace.Services.GetService<ISerializerService>();
 

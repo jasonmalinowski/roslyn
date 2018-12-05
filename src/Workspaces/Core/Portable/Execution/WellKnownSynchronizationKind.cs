@@ -43,6 +43,7 @@ namespace Microsoft.CodeAnalysis.Serialization
         AnalyzerReferenceChecksumCollection,
         TextDocumentChecksumCollection,
         DocumentChecksumCollection,
+        AnalyzerConfigDocumentChecksumCollection,
         ProjectChecksumCollection,
         SolutionStateChecksums,
         ProjectStateChecksums,

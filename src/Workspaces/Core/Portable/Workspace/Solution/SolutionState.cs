@@ -291,6 +291,17 @@ namespace Microsoft.CodeAnalysis
                 this.GetProjectState(documentId.ProjectId).ContainsAdditionalDocument(documentId);
         }
 
+        /// <summary>
+        /// True if the solution contains the analyzer config document in one of its projects
+        /// </summary>
+        public bool ContainsAnalyzerConfigDocument(DocumentId documentId)
+        {
+            return
+                documentId != null &&
+                this.ContainsProject(documentId.ProjectId) &&
+                this.GetProjectState(documentId.ProjectId).ContainsAnalyzerConfigDocument(documentId);
+        }
+
         private DocumentState GetDocumentState(DocumentId documentId)
         {
             if (documentId != null)
@@ -1196,6 +1207,20 @@ namespace Microsoft.CodeAnalysis
 
             return this.ForkProject(newProject,
                     newFilePathToDocumentIdsMap: CreateFilePathToDocumentIdsMapWithAddedDocuments(documentStates));
+        }
+
+        public SolutionState AddAnalyzerConfigDocuments(ImmutableArray<DocumentInfo> documentInfos)
+        {
+            // Adding a new analyzer config potentially impacts all syntax trees and the diagnostic reporting information
+            // attached to them, so we'll just replace all syntax trees in that case.
+            return AddDocumentsToMultipleProjects(documentInfos,
+                (documentInfo, project) => new AnalyzerConfigDocumentState(documentInfo, _solutionServices),
+                (projectState, documents) => (projectState.AddAnalyzerConfigDocuments(documents), new CompilationTranslationAction.ReplaceAllSyntaxTreesAction(projectState)));
+        }
+
+        public SolutionState RemoveAnalyzerConfigDocument(DocumentId documentId)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
