@@ -1,4 +1,7 @@
-﻿using Microsoft.CodeAnalysis.Host;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.Host;
 using Microsoft.CodeAnalysis.Text;
 using Roslyn.Utilities;
 
@@ -6,6 +9,8 @@ namespace Microsoft.CodeAnalysis
 {
     internal sealed class AnalyzerConfigDocumentState : TextDocumentState
     {
+        private readonly ValueSource<AnalyzerConfig> _analyzerConfigValueSource;
+
         private AnalyzerConfigDocumentState(
             SolutionServices solutionServices,
             IDocumentServiceProvider documentServiceProvider,
@@ -14,6 +19,7 @@ namespace Microsoft.CodeAnalysis
             ValueSource<TextAndVersion> textAndVersionSource)
             : base(solutionServices, documentServiceProvider, attributes, sourceTextOpt, textAndVersionSource)
         {
+            _analyzerConfigValueSource = CreateAnalyzerConfigValueSource();
         }
 
         public AnalyzerConfigDocumentState(
@@ -21,6 +27,18 @@ namespace Microsoft.CodeAnalysis
             SolutionServices solutionServices)
             : base(documentInfo, solutionServices)
         {
+            _analyzerConfigValueSource = CreateAnalyzerConfigValueSource();
         }
+
+        private ValueSource<AnalyzerConfig> CreateAnalyzerConfigValueSource()
+        {
+            return new AsyncLazy<AnalyzerConfig>(
+                asynchronousComputeFunction: async cancellationToken => AnalyzerConfig.Parse(await GetTextAsync(cancellationToken).ConfigureAwait(false), FilePath),
+                synchronousComputeFunction: cancellationToken => AnalyzerConfig.Parse(GetTextSynchronously(cancellationToken), FilePath),
+                cacheResult: true);
+        }
+
+        public AnalyzerConfig GetAnalyzerConfig(CancellationToken cancellationToken) => _analyzerConfigValueSource.GetValue(cancellationToken);
+        public Task<AnalyzerConfig> GetAnalyzerConfigAsync(CancellationToken cancellationToken) => _analyzerConfigValueSource.GetValueAsync(cancellationToken);
     }
 }
