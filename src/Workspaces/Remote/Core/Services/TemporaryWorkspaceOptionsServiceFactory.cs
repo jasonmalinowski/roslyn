@@ -36,7 +36,12 @@ namespace Microsoft.CodeAnalysis.Remote
 
             foreach (var factory in _documentOptionsProviderFactories)
             {
-                service.RegisterDocumentOptionsProvider(factory.Create(workspaceServices.Workspace));
+                var documentOptionsProvider = factory.Create(workspaceServices.Workspace);
+
+                if (documentOptionsProvider != null)
+                {
+                    service.RegisterDocumentOptionsProvider(documentOptionsProvider);
+                }
             }
 
             return service;

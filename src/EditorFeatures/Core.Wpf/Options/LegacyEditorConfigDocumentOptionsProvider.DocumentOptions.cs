@@ -9,7 +9,7 @@ using Roslyn.Utilities;
 
 namespace Microsoft.CodeAnalysis.Editor.Options
 {
-    internal sealed partial class EditorConfigDocumentOptionsProvider : IDocumentOptionsProvider
+    internal sealed partial class LegacyEditorConfigDocumentOptionsProvider : IDocumentOptionsProvider
     {
         private class DocumentOptions : IDocumentOptions
         {
