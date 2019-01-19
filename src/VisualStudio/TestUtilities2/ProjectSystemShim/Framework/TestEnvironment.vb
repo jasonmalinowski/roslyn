@@ -5,17 +5,13 @@ Imports System.ComponentModel.Composition.Hosting
 Imports System.IO
 Imports System.Runtime.InteropServices
 Imports System.Threading
-Imports EnvDTE
 Imports Microsoft.CodeAnalysis
 Imports Microsoft.CodeAnalysis.Editor.Shared.Utilities
 Imports Microsoft.CodeAnalysis.Editor.UnitTests
 Imports Microsoft.CodeAnalysis.FindSymbols
-Imports Microsoft.CodeAnalysis.Host
-Imports Microsoft.CodeAnalysis.Shared.TestHooks
 Imports Microsoft.CodeAnalysis.Test.Utilities
 Imports Microsoft.VisualStudio.ComponentModelHost
 Imports Microsoft.VisualStudio.Composition
-Imports Microsoft.VisualStudio.LanguageServices.Implementation
 Imports Microsoft.VisualStudio.LanguageServices.Implementation.CodeModel
 Imports Microsoft.VisualStudio.LanguageServices.Implementation.Library.ObjectBrowser.Lists
 Imports Microsoft.VisualStudio.LanguageServices.Implementation.ProjectSystem
@@ -24,7 +20,6 @@ Imports Microsoft.VisualStudio.LanguageServices.Implementation.ProjectSystem.Leg
 Imports Microsoft.VisualStudio.Shell
 Imports Microsoft.VisualStudio.Shell.Interop
 Imports Moq
-Imports Microsoft.VisualStudio.LanguageServices.Implementation.TaskList
 
 Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.ProjectSystemShim.Framework
 
@@ -38,7 +33,7 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.ProjectSystemShim.Fr
         Private Shared ReadOnly s_exportProviderFactory As Lazy(Of IExportProviderFactory) = New Lazy(Of IExportProviderFactory)(
             Function()
                 Dim catalog = TestExportProvider.EntireAssemblyCatalogWithCSharpAndVisualBasic
-                catalog = catalog.WithParts(GetType(FileChangeWatcherProvider),
+                catalog = catalog.WithParts(GetType(MockFileChangeWatcherProvider),
                                             GetType(MockVisualStudioWorkspace),
                                             GetType(MetadataReferences.FileWatchedPortableExecutableReferenceFactory),
                                             GetType(VisualStudioProjectFactory),
@@ -235,6 +230,20 @@ Namespace Microsoft.VisualStudio.LanguageServices.UnitTests.ProjectSystemShim.Fr
             Public Function UnadviseSelectionEvents(<ComAliasName("Microsoft.VisualStudio.Shell.Interop.VSCOOKIE")> dwCookie As UInteger) As Integer Implements IVsMonitorSelection.UnadviseSelectionEvents
                 Throw New NotImplementedException()
             End Function
+        End Class
+
+        <PartNotDiscoverable>
+        <Export(GetType(IFileChangeWatcherProvider))>
+        Private Class MockFileChangeWatcherProvider
+            Implements IFileChangeWatcherProvider
+
+            <ImportingConstructor>
+            Sub New(serviceProvider As MockServiceProvider)
+                Dim service = DirectCast(serviceProvider.GetService(GetType(SVsFileChangeEx)), IVsFileChangeEx)
+                Watcher = New FileChangeWatcher(Tasks.Task.FromResult(service))
+            End Sub
+
+            Public ReadOnly Property Watcher As FileChangeWatcher Implements IFileChangeWatcherProvider.Watcher
         End Class
 
         Private Class MockXmlMemberIndexService

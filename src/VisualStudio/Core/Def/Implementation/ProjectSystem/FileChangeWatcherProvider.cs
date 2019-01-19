@@ -7,8 +7,8 @@ using Microsoft.VisualStudio.Shell.Interop;
 
 namespace Microsoft.VisualStudio.LanguageServices.Implementation.ProjectSystem
 {
-    [Export(typeof(FileChangeWatcherProvider))]
-    internal sealed class FileChangeWatcherProvider
+    [Export(typeof(IFileChangeWatcherProvider))]
+    internal sealed class FileChangeWatcherProvider : IFileChangeWatcherProvider
     {
         private readonly TaskCompletionSource<IVsFileChangeEx> _fileChangeService = new TaskCompletionSource<IVsFileChangeEx>(TaskCreationOptions.RunContinuationsAsynchronously);
 

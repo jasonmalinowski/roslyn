@@ -98,7 +98,7 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.ProjectSystem
 
             System.Threading.Tasks.Task.Run(() => ConnectToOpenFileTrackerOnUIThreadAsync(asyncServiceProvider));
 
-            FileChangeWatcher = exportProvider.GetExportedValue<FileChangeWatcherProvider>().Watcher;
+            FileChangeWatcher = exportProvider.GetExportedValue<IFileChangeWatcherProvider>().Watcher;
             FileWatchedReferenceFactory = exportProvider.GetExportedValue<FileWatchedPortableExecutableReferenceFactory>();
 
             FileWatchedReferenceFactory.ReferenceChanged += this.RefreshMetadataReferencesForFile;

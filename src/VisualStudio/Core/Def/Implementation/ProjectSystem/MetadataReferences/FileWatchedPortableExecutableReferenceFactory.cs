@@ -43,7 +43,7 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.ProjectSystem.M
         [ImportingConstructor]
         public FileWatchedPortableExecutableReferenceFactory(
             Lazy<VisualStudioWorkspace> visualStudioWorkspace,
-            FileChangeWatcherProvider fileChangeWatcherProvider)
+            IFileChangeWatcherProvider fileChangeWatcherProvider)
         {
             _visualStudioWorkspace = visualStudioWorkspace;
 
