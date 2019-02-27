@@ -403,7 +403,7 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.ProjectSystem
                         solutionChanges,
                         documentFileNamesAdded,
                         documentsToOpen,
-                        (s, documents) => solution.AddAnalyzerConfigDocuments(documents),
+                        (s, documents) => s.AddAnalyzerConfigDocuments(documents),
                         WorkspaceChangeKind.AnalyzerConfigDocumentAdded,
                         (s, id) =>
                         {
