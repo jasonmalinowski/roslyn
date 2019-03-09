@@ -185,10 +185,14 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.ProjectSystem
                                     {
                                         w.OnDocumentOpened(documentId, textContainer, isCurrentContext);
                                     }
+                                    else if (w.CurrentSolution.ContainsAdditionalDocument(documentId))
+                                    {
+                                        w.OnAdditionalDocumentOpened(documentId, textContainer, isCurrentContext);
+                                    }
                                     else
                                     {
-                                        Debug.Assert(w.CurrentSolution.ContainsAdditionalDocument(documentId));
-                                        w.OnAdditionalDocumentOpened(documentId, textContainer, isCurrentContext);
+                                        Debug.Assert(w.CurrentSolution.ContainsAnalyzerConfigDocument(documentId));
+                                        // TODO: actually open it
                                     }
                                 }
                             }
