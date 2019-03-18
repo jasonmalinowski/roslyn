@@ -39,6 +39,11 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.LanguageService
 
             await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
+            // Fetch the component model early and asynchronously to avoid doing a blocking GetService for it later.
+            // We should ideally delete this when the rest of our package initialization doesn't require MEF.
+            var componentModel = (IComponentModel)await GetServiceAsync(typeof(SComponentModel)).ConfigureAwait(true);
+            Assumes.Present(componentModel);
+
             var shell = (IVsShell)await GetServiceAsync(typeof(SVsShell)).ConfigureAwait(true);
             var solution = (IVsSolution)await GetServiceAsync(typeof(SVsSolution)).ConfigureAwait(true);
             cancellationToken.ThrowIfCancellationRequested();
