@@ -33,10 +33,6 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.LanguageService
 
         public VisualStudioWorkspaceImpl Workspace { get; private set; }
 
-        protected AbstractPackage()
-        {
-        }
-
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
             await base.InitializeAsync(cancellationToken, progress).ConfigureAwait(true);

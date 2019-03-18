@@ -75,8 +75,6 @@ Namespace Microsoft.VisualStudio.LanguageServices.VisualBasic
         Private _libraryManagerCookie As UInteger
 
         Public Sub New()
-            MyBase.New()
-
             _comAggregate = Interop.ComAggregate.CreateAggregatedObject(Me)
         End Sub
 
