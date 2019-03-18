@@ -73,6 +73,8 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.ProjectSystem
 
             _metadataReferences = ImmutableArray.CreateRange(CreateMetadataReferences());
             saveEventsService.StartSendingSaveEvents();
+
+            StartSolutionCrawler();
         }
 
         public void RegisterLanguage(Guid languageGuid, string languageName, string scriptExtension)
@@ -466,6 +468,7 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.ProjectSystem
             var runningDocumentTableForEvents = (IVsRunningDocumentTable)_runningDocumentTable;
             runningDocumentTableForEvents.UnadviseRunningDocTableEvents(_runningDocumentTableEventsCookie);
             _runningDocumentTableEventsCookie = 0;
+
             base.Dispose(finalize);
         }
 

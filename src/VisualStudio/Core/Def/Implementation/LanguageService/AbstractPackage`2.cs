@@ -26,7 +26,6 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.LanguageService
         where TLanguageService : AbstractLanguageService<TPackage, TLanguageService>
     {
         private TLanguageService _languageService;
-        private MiscellaneousFilesWorkspace _miscellaneousFilesWorkspace;
 
         private PackageInstallerService _packageInstallerService;
         private VisualStudioSymbolSearchService _symbolSearchService;
@@ -68,14 +67,9 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.LanguageService
 
             shell.LoadPackage(Guids.RoslynPackageId, out var setupPackage);
 
-            _miscellaneousFilesWorkspace = this.ComponentModel.GetService<MiscellaneousFilesWorkspace>();
-            if (_miscellaneousFilesWorkspace != null)
-            {
-                // make sure solution crawler start once everything has been setup.
-                _miscellaneousFilesWorkspace.StartSolutionCrawler();
-            }
+            var miscellaneousFilesWorkspace = componentModel.GetService<MiscellaneousFilesWorkspace>();
 
-            RegisterMiscellaneousFilesWorkspaceInformation(_miscellaneousFilesWorkspace);
+            RegisterMiscellaneousFilesWorkspaceInformation(miscellaneousFilesWorkspace);
 
             this.Workspace = this.CreateWorkspace();
             if (await IsInIdeModeAsync(this.Workspace, cancellationToken).ConfigureAwait(true))
@@ -138,11 +132,6 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.LanguageService
         {
             if (disposing)
             {
-                if (_miscellaneousFilesWorkspace != null)
-                {
-                    _miscellaneousFilesWorkspace.StopSolutionCrawler();
-                }
-
                 if (ThreadHelper.JoinableTaskFactory.Run(() => IsInIdeModeAsync(this.Workspace, CancellationToken.None)))
                 {
                     this.Workspace.StopSolutionCrawler();
