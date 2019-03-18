@@ -27,17 +27,16 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation
     /// </summary>
     internal abstract partial class AbstractEditorFactory : IVsEditorFactory, IVsEditorFactoryNotify
     {
-        private readonly IComponentModel _componentModel;
         private Microsoft.VisualStudio.OLE.Interop.IServiceProvider _oleServiceProvider;
         private bool _encoding;
 
-        protected AbstractEditorFactory(IComponentModel componentModel)
-        {
-            _componentModel = componentModel;
-        }
-
         protected abstract string ContentTypeName { get; }
         protected abstract string LanguageName { get; }
+
+        private IComponentModel GetComponentModel()
+        {
+            return (IComponentModel)_oleServiceProvider.QueryService<SComponentModel>();
+        }
 
         public void SetEncoding(bool value)
         {
@@ -89,12 +88,13 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation
                 }
             }
 
-            var editorAdaptersFactoryService = _componentModel.GetService<IVsEditorAdaptersFactoryService>();
+            var componentModel = (IComponentModel)_oleServiceProvider.QueryService<SComponentModel>();
+            var editorAdaptersFactoryService = componentModel.GetService<IVsEditorAdaptersFactoryService>();
 
             // Do we need to create a text buffer?
             if (textBuffer == null)
             {
-                var contentTypeRegistryService = _componentModel.GetService<IContentTypeRegistryService>();
+                var contentTypeRegistryService = componentModel.GetService<IContentTypeRegistryService>();
                 var contentType = contentTypeRegistryService.GetContentType(ContentTypeName);
                 textBuffer = editorAdaptersFactoryService.CreateVsTextBufferAdapter(_oleServiceProvider, contentType);
 
@@ -243,7 +243,7 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation
             // Is this being added from a template?
             if (((__EFNFLAGS)grfEFN & __EFNFLAGS.EFN_ClonedFromTemplate) != 0)
             {
-                var waitIndicator = _componentModel.GetService<IWaitIndicator>();
+                var waitIndicator = GetComponentModel().GetService<IWaitIndicator>();
                 // TODO(cyrusn): Can this be cancellable?
                 waitIndicator.Wait(
                     "Intellisense",
@@ -264,7 +264,7 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation
             // A file has been created on disk which the user added from the "Add Item" dialog. We need
             // to include this in a workspace to figure out the right options it should be formatted with.
             // This requires us to place it in the correct project.
-            var workspace = _componentModel.GetService<VisualStudioWorkspace>();
+            var workspace = GetComponentModel().GetService<VisualStudioWorkspace>();
             var solution = workspace.CurrentSolution;
 
             ProjectId projectIdToAddTo = null;

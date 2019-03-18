@@ -155,7 +155,7 @@ Namespace Microsoft.VisualStudio.LanguageServices.VisualBasic
         End Function
 
         Protected Overrides Function CreateEditorFactories() As IEnumerable(Of IVsEditorFactory)
-            Dim editorFactory = New VisualBasicEditorFactory(Me.ComponentModel)
+            Dim editorFactory = New VisualBasicEditorFactory()
             Dim codePageEditorFactory = New VisualBasicCodePageEditorFactory(editorFactory)
 
             Return {editorFactory, codePageEditorFactory}
