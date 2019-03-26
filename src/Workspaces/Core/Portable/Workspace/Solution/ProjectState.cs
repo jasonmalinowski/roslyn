@@ -430,6 +430,12 @@ namespace Microsoft.CodeAnalysis
             return state;
         }
 
+        public AnalyzerConfigDocumentState GetAnalyzerConfigDocumentState(DocumentId documentId)
+        {
+            _analyzerConfigDocumentStates.TryGetValue(documentId, out var state);
+            return state;
+        }
+
         private ProjectState With(
             ProjectInfo projectInfo = null,
             ImmutableList<DocumentId> documentIds = default,
@@ -787,6 +793,21 @@ namespace Microsoft.CodeAnalysis
                 additionalDocumentStates: newDocumentStates,
                 latestDocumentVersion: dependentDocumentVersion,
                 latestDocumentTopLevelChangeVersion: dependentSemanticVersion);
+        }
+
+        public ProjectState UpdateAnalyzerConfigDocument(AnalyzerConfigDocumentState newDocument, bool textChanged, bool recalculateDependentVersions)
+        {
+            Debug.Assert(this.ContainsAnalyzerConfigDocument(newDocument.Id));
+
+            var oldDocument = this.GetAnalyzerConfigDocumentState(newDocument.Id);
+            if (oldDocument == newDocument)
+            {
+                return this;
+            }
+
+            var newDocumentStates = _analyzerConfigDocumentStates.SetItem(newDocument.Id, newDocument);
+
+            return CreateNewStateForChangedAnalyzerConfigDocuments(newDocumentStates);
         }
 
         public ProjectState UpdateDocumentsOrder(ImmutableList<DocumentId> documentIds)
