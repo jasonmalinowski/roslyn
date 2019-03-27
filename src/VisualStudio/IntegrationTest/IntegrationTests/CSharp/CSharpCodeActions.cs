@@ -183,9 +183,6 @@ class C
     public int Y2 => 5;
 }";
 
-            // CodingConventions only sends notifications if a file is open for all directories in the project
-            VisualStudio.SolutionExplorer.OpenFile(new ProjectUtils.Project(ProjectName), @"Properties\AssemblyInfo.cs");
-
             // Switch back to the main document we'll be editing
             VisualStudio.SolutionExplorer.OpenFile(new ProjectUtils.Project(ProjectName), "Class1.cs");
 
@@ -212,21 +209,15 @@ class C
 csharp_style_expression_bodied_properties = true:warning
 ";
 
-            VisualStudio.SolutionExplorer.BeginWatchForCodingConventionsChange(new ProjectUtils.Project(ProjectName), "Class1.cs");
-            try
-            {
-                VisualStudio.SolutionExplorer.AddFile(new ProjectUtils.Project(ProjectName), ".editorconfig", editorConfig, open: false);
-            }
-            finally
-            {
-                VisualStudio.SolutionExplorer.EndWaitForCodingConventionsChange(Helper.HangMitigatingTimeout);
-            }
+            // Adding an .editorconfig triggers file watchers and then asynchrony in the coding conventions library;
+            // wait until we see the appropriate change event triggered by it.
+            // Note: right now we watch for two changes, because the addition of the file triggers a design time build which
+            // causes https://github.com/dotnet/roslyn/issues/34309 to cause a spurious change.
+            VisualStudio.Workspace.WaitForWorkspaceChangeFromAction(WorkspaceChangeKind.AnalyzerConfigDocumentAdded, new ProjectUtils.Project(ProjectName),
+                () => VisualStudio.SolutionExplorer.AddFile(new ProjectUtils.Project(ProjectName), ".editorconfig", editorConfig, open: false));
 
-            // Wait for CodingConventions library events to propagate to the workspace
-            VisualStudio.WaitForApplicationIdle(CancellationToken.None);
             VisualStudio.Workspace.WaitForAllAsyncOperations(
                 Helper.HangMitigatingTimeout,
-                FeatureAttribute.Workspace,
                 FeatureAttribute.SolutionCrawler,
                 FeatureAttribute.DiagnosticService,
                 FeatureAttribute.ErrorSquiggles);
@@ -245,21 +236,12 @@ csharp_style_expression_bodied_properties = true:warning
              * outcome for the modified .editorconfig style.
              */
 
-            VisualStudio.SolutionExplorer.BeginWatchForCodingConventionsChange(new ProjectUtils.Project(ProjectName), "Class1.cs");
-            try
-            {
-                VisualStudio.SolutionExplorer.SetFileContents(new ProjectUtils.Project(ProjectName), ".editorconfig", editorConfig.Replace("true:warning", "false:warning"));
-            }
-            finally
-            {
-                VisualStudio.SolutionExplorer.EndWaitForCodingConventionsChange(Helper.HangMitigatingTimeout);
-            }
+            // Updating an .editorconfig triggers file watchers; wait until we see the appropriate change event triggered by it.
+            VisualStudio.Workspace.WaitForWorkspaceChangeFromAction(WorkspaceChangeKind.AnalyzerConfigDocumentChanged, new ProjectUtils.Project(ProjectName),
+                () => VisualStudio.SolutionExplorer.SetFileContents(new ProjectUtils.Project(ProjectName), ".editorconfig", editorConfig.Replace("true:warning", "false:warning")));
 
-            // Wait for CodingConventions library events to propagate to the workspace
-            VisualStudio.WaitForApplicationIdle(CancellationToken.None);
             VisualStudio.Workspace.WaitForAllAsyncOperations(
                 Helper.HangMitigatingTimeout,
-                FeatureAttribute.Workspace,
                 FeatureAttribute.SolutionCrawler,
                 FeatureAttribute.DiagnosticService,
                 FeatureAttribute.ErrorSquiggles);

@@ -299,10 +299,7 @@ class C
   }
 }";
 
-            // CodingConventions only sends notifications if a file is open for all directories in the project
-            VisualStudio.SolutionExplorer.OpenFile(new ProjectUtils.Project(ProjectName), @"Properties\AssemblyInfo.cs");
-
-            // Switch back to the main document we'll be editing
+            // Open to the main document we'll be editing
             VisualStudio.SolutionExplorer.OpenFile(new ProjectUtils.Project(ProjectName), "Class1.cs");
 
             MarkupTestFile.GetSpans(markup, out var expectedTextFourSpaceIndent, out ImmutableArray<TextSpan> spans);
@@ -335,24 +332,10 @@ class C
 indent_size = 2
 ";
 
-            VisualStudio.SolutionExplorer.BeginWatchForCodingConventionsChange(new ProjectUtils.Project(ProjectName), "Class1.cs");
-            try
-            {
-                VisualStudio.SolutionExplorer.AddFile(new ProjectUtils.Project(ProjectName), ".editorconfig", editorConfig, open: false);
-            }
-            finally
-            {
-                VisualStudio.SolutionExplorer.EndWaitForCodingConventionsChange(Helper.HangMitigatingTimeout);
-            }
+            // Adding an .editorconfig triggers a workspace change event; wait until we see the appropriate change event triggered by it.
+            VisualStudio.Workspace.WaitForWorkspaceChangeFromAction(WorkspaceChangeKind.AnalyzerConfigDocumentAdded, new ProjectUtils.Project(ProjectName),
+                () => VisualStudio.SolutionExplorer.AddFile(new ProjectUtils.Project(ProjectName), ".editorconfig", editorConfig, open: false));
 
-            // Wait for CodingConventions library events to propagate to the workspace
-            VisualStudio.WaitForApplicationIdle(CancellationToken.None);
-            VisualStudio.Workspace.WaitForAllAsyncOperations(
-                Helper.HangMitigatingTimeout,
-                FeatureAttribute.Workspace,
-                FeatureAttribute.SolutionCrawler,
-                FeatureAttribute.DiagnosticService,
-                FeatureAttribute.ErrorSquiggles);
             VisualStudio.Editor.FormatDocumentViaCommand();
 
             Assert.Equal(expectedTextTwoSpaceIndent, VisualStudio.Editor.GetText());
@@ -362,24 +345,10 @@ indent_size = 2
              * and verifies that the next Format Document operation adheres to the updated formatting.
              */
 
-            VisualStudio.SolutionExplorer.BeginWatchForCodingConventionsChange(new ProjectUtils.Project(ProjectName), "Class1.cs");
-            try
-            {
-                VisualStudio.SolutionExplorer.SetFileContents(new ProjectUtils.Project(ProjectName), ".editorconfig", editorConfig.Replace("2", "4"));
-            }
-            finally
-            {
-                VisualStudio.SolutionExplorer.EndWaitForCodingConventionsChange(Helper.HangMitigatingTimeout);
-            }
+            // Updating an .editorconfig triggers file watchers; wait until we see the appropriate change event triggered by it.
+            VisualStudio.Workspace.WaitForWorkspaceChangeFromAction(WorkspaceChangeKind.AnalyzerConfigDocumentChanged, new ProjectUtils.Project(ProjectName),
+                () => VisualStudio.SolutionExplorer.SetFileContents(new ProjectUtils.Project(ProjectName), ".editorconfig", editorConfig.Replace("2", "4")));
 
-            // Wait for CodingConventions library events to propagate to the workspace
-            VisualStudio.WaitForApplicationIdle(CancellationToken.None);
-            VisualStudio.Workspace.WaitForAllAsyncOperations(
-                Helper.HangMitigatingTimeout,
-                FeatureAttribute.Workspace,
-                FeatureAttribute.SolutionCrawler,
-                FeatureAttribute.DiagnosticService,
-                FeatureAttribute.ErrorSquiggles);
             VisualStudio.Editor.FormatDocumentViaCommand();
 
             Assert.Equal(expectedTextFourSpaceIndent, VisualStudio.Editor.GetText());
