@@ -5,11 +5,13 @@ using System.Collections.Generic;
 using System.Composition.Hosting;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis.Editor;
 using Microsoft.CodeAnalysis.Editor.Implementation.ForegroundNotification;
 using Microsoft.CodeAnalysis.Editor.Shared.Utilities;
+using Microsoft.CodeAnalysis.ErrorReporting;
 using Microsoft.CodeAnalysis.Host;
 using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.CodeAnalysis.Remote;
@@ -61,6 +63,9 @@ namespace Microsoft.CodeAnalysis.Test.Utilities
             CreateRemoteHostServices,
             LazyThreadSafetyMode.ExecutionAndPublication);
 
+        private static readonly Action<Exception> s_NonFatalErrorHandler =
+            e => ExceptionDispatchInfo.Capture(e).Throw();
+
         private MefHostServices _hostServices;
 
         public override void Before(MethodInfo methodUnderTest)
@@ -71,6 +76,7 @@ namespace Microsoft.CodeAnalysis.Test.Utilities
             // make sure we enable this for all unit tests
             AsynchronousOperationListenerProvider.Enable(enable: true, diagnostics: true);
             ExportProviderCache.SetEnabled_OnlyUseExportProviderAttributeCanCall(true);
+            FatalError.NonFatalHandler = s_NonFatalErrorHandler;
         }
 
         /// <summary>
