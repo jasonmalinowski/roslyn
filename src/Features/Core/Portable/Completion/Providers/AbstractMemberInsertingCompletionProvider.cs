@@ -32,6 +32,7 @@ namespace Microsoft.CodeAnalysis.Completion.Providers
         public override async Task<CompletionChange> GetChangeAsync(Document document, CompletionItem item, char? commitKey = default, CancellationToken cancellationToken = default)
         {
             var newDocument = await DetermineNewDocumentAsync(document, item, cancellationToken).ConfigureAwait(false);
+            var oldText = await document.GetTextAsync(cancellationToken).ConfigureAwait(false);
             var newText = await newDocument.GetTextAsync(cancellationToken).ConfigureAwait(false);
             var newRoot = await newDocument.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
 
@@ -95,7 +96,12 @@ namespace Microsoft.CodeAnalysis.Completion.Providers
             var declaration = GetSyntax(newRoot.FindToken(destinationSpan.End));
 
             document = document.WithSyntaxRoot(newRoot.ReplaceNode(declaration, declaration.WithAdditionalAnnotations(_annotation)));
-            return await Formatter.FormatAsync(document, _annotation, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            // Rather than formatting the entire node (which may format a bunch of extra unrelated trivia and directives), we'll format just the node we inserted,
+            // expanding to the start of the line.
+            var startLine = finalText.Lines.GetLineFromPosition(destinationSpan.Start);
+
+            return await Formatter.FormatAsync(document, TextSpan.FromBounds(startLine.Start, declaration.Span.End), cancellationToken: cancellationToken).ConfigureAwait(false);
         }
 
         private async Task<Document> GenerateMemberAndUsingsAsync(
