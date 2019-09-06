@@ -123,7 +123,7 @@ namespace Microsoft.CodeAnalysis.Completion.Providers
                     symbol,
                     startToken,
                     position,
-                    rules: _provider.GetRules());
+                    rules: _provider.GetRules().WithFormatOnCommit(true));
             }
 
             private bool TryDetermineOverridableMembers(
