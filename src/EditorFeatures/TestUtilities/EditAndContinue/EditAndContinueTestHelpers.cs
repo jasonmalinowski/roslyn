@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Differencing;
 using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Test.Utilities;
@@ -22,7 +21,6 @@ namespace Microsoft.CodeAnalysis.EditAndContinue.UnitTests
         public abstract SyntaxNode FindNode(SyntaxNode root, TextSpan span);
         public abstract SyntaxTree ParseText(string source);
         public abstract Compilation CreateLibraryCompilation(string name, IEnumerable<SyntaxTree> trees);
-        public abstract ImmutableArray<SyntaxNode> GetDeclarators(ISymbol method);
 
         internal void VerifyUnchangedDocument(
             string source,
@@ -400,13 +398,6 @@ namespace Microsoft.CodeAnalysis.EditAndContinue.UnitTests
                 }));
         }
 
-        private static IEnumerable<KeyValuePair<K, V>> ReverseMapping<K, V>(IEnumerable<KeyValuePair<V, K>> mapping)
-        {
-            foreach (var pair in mapping)
-            {
-                yield return KeyValuePairUtil.Create(pair.Value, pair.Key);
-            }
-        }
     }
 
     internal static class EditScriptTestUtils
