@@ -6,17 +6,15 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Diagnostics.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics.EngineV2;
-using Microsoft.CodeAnalysis.Host.Mef;
 using Microsoft.CodeAnalysis.Shared.Options;
 using Microsoft.CodeAnalysis.Shared.TestHooks;
 using Microsoft.CodeAnalysis.SolutionCrawler;
 using Microsoft.CodeAnalysis.Test.Utilities;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.UnitTests;
-using Microsoft.VisualStudio.Composition;
 using Microsoft.VisualStudio.LanguageServices;
 using Roslyn.Test.Utilities;
 using Roslyn.Utilities;
@@ -83,7 +81,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Diagnostics
             // open document
             workspace.OpenDocument(document.Id);
 
-            await TestAnalyzerAsync(workspace, document, new CSharpCompilerDiagnosticAnalyzer(), CompilerAnalyzerResultSetter, expectedSyntax: true, expectedSemantic: false);
+            await TestAnalyzerAsync(workspace, document, GetCSharpCompilerDiagnosticAnalyzer(), CompilerAnalyzerResultSetter, expectedSyntax: true, expectedSemantic: false);
         }
 
         [Fact]
@@ -93,7 +91,7 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Diagnostics
             workspace.Options = workspace.Options.WithChangedOption(ServiceFeatureOnOffOptions.ClosedFileDiagnostic, LanguageNames.CSharp, true);
             var document = GetDocumentFromIncompleteProject(workspace);
 
-            await TestAnalyzerAsync(workspace, document, new CSharpCompilerDiagnosticAnalyzer(), CompilerAnalyzerResultSetter, expectedSyntax: true, expectedSemantic: false);
+            await TestAnalyzerAsync(workspace, document, GetCSharpCompilerDiagnosticAnalyzer(), CompilerAnalyzerResultSetter, expectedSyntax: true, expectedSemantic: false);
         }
 
         private static async Task TestAnalyzerAsync(
@@ -269,14 +267,14 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Diagnostics
                 new Priority10Analyzer(),
                 new Priority1Analyzer(),
                 new Priority0Analyzer(),
-                new CSharpCompilerDiagnosticAnalyzer(),
+                GetCSharpCompilerDiagnosticAnalyzer(),
                 new Analyzer(),
             }, listener, project.Language);
 
             var incrementalAnalyzer = (DiagnosticIncrementalAnalyzer)service.CreateIncrementalAnalyzer(workspace);
             var analyzers = incrementalAnalyzer.GetAnalyzersTestOnly(project).ToArray();
 
-            Assert.Equal(typeof(CSharpCompilerDiagnosticAnalyzer), analyzers[0].GetType());
+            Assert.True(analyzers[0].IsCompilerAnalyzer());
             Assert.Equal(typeof(Analyzer), analyzers[1].GetType());
             Assert.Equal(typeof(Priority0Analyzer), analyzers[2].GetType());
             Assert.Equal(typeof(Priority1Analyzer), analyzers[3].GetType());
@@ -373,6 +371,11 @@ namespace Microsoft.CodeAnalysis.Editor.UnitTests.Diagnostics
             semantic |= diagnostics.Any(d => d.Properties["Origin"] != "Syntactic");
 
             return (syntax, semantic);
+        }
+
+        private DiagnosticAnalyzer GetCSharpCompilerDiagnosticAnalyzer()
+        {
+            return (DiagnosticAnalyzer)Activator.CreateInstance(typeof(CSharpCompilation).Assembly.GetType(AnalyzerHelper.CSharpCompilerAnalyzerTypeName));
         }
 
         private static async Task RunAllAnalysisAsync(IIncrementalAnalyzer analyzer, Document document)

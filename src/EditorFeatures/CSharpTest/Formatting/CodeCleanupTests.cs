@@ -8,9 +8,9 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CodeCleanup;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.UseExpressionBody;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Diagnostics.CSharp;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.Editor.UnitTests;
 using Microsoft.CodeAnalysis.Editor.UnitTests.Workspaces;
@@ -291,7 +291,7 @@ namespace M
 
             private static IEnumerable<string> GetCompilerAnalyzerAssemblies()
             {
-                yield return typeof(CSharpCompilerDiagnosticAnalyzer).Assembly.Location;
+                yield return typeof(CSharpCompilation).Assembly.Location;
                 yield return typeof(UseExpressionBodyDiagnosticAnalyzer).Assembly.Location;
             }
 
