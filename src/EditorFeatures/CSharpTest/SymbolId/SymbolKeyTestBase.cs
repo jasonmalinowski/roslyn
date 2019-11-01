@@ -195,7 +195,7 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.UnitTests.SymbolId
         {
             var list = new List<ISymbol>();
             var localDumper = includeLocal ? new LocalSymbolDumper(compilation) : null;
-            GetSourceMemberSymbols(compilation.SourceModule.GlobalNamespace.GetPublicSymbol(), list, localDumper);
+            GetSourceMemberSymbols(compilation.SourceModule.GlobalNamespace, list, localDumper);
 
             // ??
             // if (includeLocal)
@@ -232,14 +232,14 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.UnitTests.SymbolId
 
                         if (localDumper != null)
                         {
-                            localDumper.GetLocalSymbols(method.GetSymbol(), list);
+                            localDumper.GetLocalSymbols(method, list);
                         }
 
                         break;
                     case SymbolKind.Field:
                         if (localDumper != null)
                         {
-                            localDumper.GetLocalSymbols(memberSymbol.GetSymbol<FieldSymbol>(), list);
+                            localDumper.GetLocalSymbols((IFieldSymbol)memberSymbol, list);
                         }
 
                         break;
@@ -278,7 +278,7 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.UnitTests.SymbolId
                 _compilation = compilation;
             }
 
-            public void GetLocalSymbols(FieldSymbol symbol, List<ISymbol> list)
+            public void GetLocalSymbols(IFieldSymbol symbol, List<ISymbol> list)
             {
                 foreach (var node in symbol.DeclaringSyntaxReferences.Select(d => d.GetSyntax()))
                 {
@@ -295,7 +295,7 @@ namespace Microsoft.CodeAnalysis.Editor.CSharp.UnitTests.SymbolId
                 }
             }
 
-            public void GetLocalSymbols(MethodSymbol symbol, List<ISymbol> list)
+            public void GetLocalSymbols(IMethodSymbol symbol, List<ISymbol> list)
             {
                 foreach (var node in symbol.DeclaringSyntaxReferences.Select(d => d.GetSyntax()))
                 {

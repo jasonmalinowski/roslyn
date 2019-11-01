@@ -89,8 +89,8 @@ public void Method()
             var comp1 = CreateCompilation(src1);
             var comp2 = CreateCompilation(src2);
 
-            var symbol01 = comp1.SourceModule.GlobalNamespace.GetMembers().FirstOrDefault() as NamedTypeSymbol;
-            var symbol02 = comp1.SourceModule.GlobalNamespace.GetMembers().FirstOrDefault() as NamedTypeSymbol;
+            var symbol01 = comp1.SourceModule.GlobalNamespace.GetMembers().FirstOrDefault() as INamedTypeSymbol;
+            var symbol02 = comp1.SourceModule.GlobalNamespace.GetMembers().FirstOrDefault() as INamedTypeSymbol;
 
             Assert.NotNull(symbol01);
             Assert.NotNull(symbol02);

@@ -54,7 +54,7 @@ public class App : C
             var comp1 = CreateCompilation(src1);
 
             // Compilation to Compilation
-            var comp2 = (Compilation)CreateCompilation(src2, new MetadataReference[] { new CSharpCompilationReference(comp1) });
+            var comp2 = (Compilation)CreateCompilation(src2, new MetadataReference[] { comp1.ToMetadataReference() });
 
             var originalSymbols = GetSourceSymbols(comp1, SymbolCategory.DeclaredType).OrderBy(s => s.Name).ToList();
             Assert.Equal(5, originalSymbols.Count);
@@ -322,7 +322,7 @@ class Test
             var comp20 = CreateEmptyCompilation(src1, new[] { TestReferences.NetFx.v4_0_21006.mscorlib });
 
             // "Compilation ref Compilation"
-            var comp40 = CreateCompilation(src2, new[] { new CSharpCompilationReference(comp20) });
+            var comp40 = CreateCompilation(src2, new[] { comp20.ToMetadataReference() });
 
             var originals = GetSourceSymbols(comp20, SymbolCategory.NonTypeMember | SymbolCategory.Parameter);
             var originalSymbols = originals.Where(s => !s.IsAccessor() && s.Kind != SymbolKind.Parameter).OrderBy(s => s.Name).ToList();
@@ -404,7 +404,7 @@ class Test
             var comp20 = CreateEmptyCompilation(src1, new[] { TestReferences.NetFx.v4_0_21006.mscorlib });
 
             // "Compilation ref Compilation"
-            var comp40 = CreateCompilation(src2, new[] { new CSharpCompilationReference(comp20) });
+            var comp40 = CreateCompilation(src2, new[] { comp20.ToMetadataReference() });
 
             var originals = GetSourceSymbols(comp20, SymbolCategory.NonTypeMember | SymbolCategory.Parameter);
             var originalSymbols = originals.Where(s => !s.IsAccessor() && s.Kind != SymbolKind.Parameter).OrderBy(s => s.Name).ToList();
