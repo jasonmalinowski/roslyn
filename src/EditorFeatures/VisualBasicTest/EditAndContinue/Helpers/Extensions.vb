@@ -5,11 +5,15 @@ Imports Microsoft.CodeAnalysis.Differencing
 Imports Microsoft.CodeAnalysis.EditAndContinue
 Imports Microsoft.CodeAnalysis.EditAndContinue.UnitTests
 Imports Microsoft.CodeAnalysis.Editor.VisualBasic.UnitTests.EditAndContinue
-Imports Microsoft.CodeAnalysis.Test.Utilities
 
 Namespace Microsoft.CodeAnalysis.VisualBasic.EditAndContinue.UnitTests
 
     Friend Module Extensions
+
+        <Extension>
+        Friend Function GetSharedConstructors(type As INamedTypeSymbol) As IEnumerable(Of IMethodSymbol)
+            Return type.Constructors.Except(type.InstanceConstructors)
+        End Function
 
         Friend Sub VerifyUnchangedDocument(
             source As String,
