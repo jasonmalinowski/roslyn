@@ -220,7 +220,6 @@ namespace Microsoft.CodeAnalysis.BuildTasks
             commandLine.AppendWhenTrue("/errorendlocation", _store, nameof(ErrorEndLocation));
             commandLine.AppendSwitchIfNotNull("/preferreduilang:", PreferredUILang);
             commandLine.AppendPlusOrMinusSwitch("/highentropyva", _store, nameof(HighEntropyVA));
-            commandLine.AppendSwitchIfNotNull("/nullable:", Nullable);
             commandLine.AppendWhenTrue("/nosdkpath", _store, nameof(DisableSdkPath));
 
             // If not design time build and the globalSessionGuid property was set then add a -globalsessionguid:<guid>
@@ -274,6 +273,13 @@ namespace Microsoft.CodeAnalysis.BuildTasks
                     commandLine.AppendSwitchIfNotNull("@", response.ItemSpec);
                 }
             }
+        }
+
+        internal override void AddResponseFileCommandsForSwitchesSinceInitialReleaseThatAreNeededByTheHost(CommandLineBuilderExtension commandLine)
+        {
+            base.AddResponseFileCommandsForSwitchesSinceInitialReleaseThatAreNeededByTheHost(commandLine);
+
+            commandLine.AppendSwitchIfNotNull("/nullable:", Nullable);
         }
 
         #endregion
