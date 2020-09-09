@@ -31,6 +31,8 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.ProjectSystem
         private IVsTextLines _vsTextLines;
         private IVsInvisibleEditor _invisibleEditor;
         private OLE.Interop.IOleUndoManager? _manager;
+        private readonly uint _rdtCookie;
+        private bool _forceSave = false;
         private readonly bool _needsUndoRestored;
 
         /// <remarks>
@@ -86,6 +88,44 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.ProjectSystem
                 // We need to clean up the extra reference we have, now that we have an RCW holding onto the object.
                 Marshal.Release(invisibleEditorPtr);
             }
+
+            // If there's no hierarchy associated with this, we'll need to wire it up.
+            if (_needsSave)
+            {
+                var runningDocumentTable = (IVsRunningDocumentTable4)_serviceProvider.GetService(typeof(SVsRunningDocumentTable));
+
+                _rdtCookie = runningDocumentTable.GetDocumentCookie(_filePath);
+                runningDocumentTable.GetDocumentHierarchyItem(_rdtCookie, out var hierarchyInRdt, out _);
+                if (hierarchyInRdt == null)
+                {
+                    // This file isn't associated with any project, so we need to wire it up ourselves. First, ensure it's got an edit lock or
+                    // the external files project won't allow saving
+                    var externalFilesManager = (IVsExternalFilesManager)_serviceProvider.GetService(typeof(SVsExternalFilesManager));
+                    Marshal.ThrowExceptionForHR(externalFilesManager.GetExternalFilesProject(out var externalFilesProject));
+
+                    // First, add an entry to the Miscellaneous Files Project
+                    externalFilesManager.TransferDocument(pszMkDocumentOld: null, _filePath, null);
+
+                    // Now that it's there, we can transfer the RDT entry to point to it
+                    if (ErrorHandler.Succeeded(externalFilesProject.IsDocumentInProject(_filePath, out int pfFound, null, out var itemId)) &&
+                        pfFound != 0)
+                    {
+                        // We have an item ID, so we can transfer the RDT entry
+                        var externalFilesHierarchy = Marshal.GetComInterfaceForObject<IVsProject, IVsHierarchy>(externalFilesProject);
+                        try
+                        {
+                            if (ErrorHandler.Succeeded(((IVsRunningDocumentTable)runningDocumentTable).RenameDocument(_filePath, _filePath, externalFilesHierarchy, itemId)))
+                            {
+                                _forceSave = true;
+                            }
+                        }
+                        finally
+                        {
+                            Marshal.Release(externalFilesHierarchy);
+                        }
+                    }
+                }
+            }
         }
 
         public IVsTextLines VsTextLines
@@ -131,14 +171,15 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.ProjectSystem
 
                     if (runningDocumentTable4.IsMonikerValid(_filePath))
                     {
-                        var cookie = runningDocumentTable4.GetDocumentCookie(_filePath);
                         var runningDocumentTable = (IVsRunningDocumentTable)runningDocumentTable4;
 
                         // Old cslangsvc.dll requested not to add to MRU for, and I quote, "performance!". Makes sense not
                         // to include it in the MRU anyways.
-                        ErrorHandler.ThrowOnFailure(runningDocumentTable.ModifyDocumentFlags(cookie, (uint)_VSRDTFLAGS.RDT_DontAddToMRU, fSet: 1));
+                        ErrorHandler.ThrowOnFailure(runningDocumentTable.ModifyDocumentFlags(_rdtCookie, (uint)_VSRDTFLAGS.RDT_DontAddToMRU, fSet: 1));
 
-                        runningDocumentTable.SaveDocuments((uint)__VSRDTSAVEOPTIONS.RDTSAVEOPT_SaveIfDirty, pHier: null, itemid: 0, docCookie: cookie);
+                        uint saveOptions = _forceSave ? (uint)__VSRDTSAVEOPTIONS.RDTSAVEOPT_ForceSave :
+                                                        (uint)__VSRDTSAVEOPTIONS.RDTSAVEOPT_SaveIfDirty;
+                        runningDocumentTable.SaveDocuments(saveOptions, pHier: null, itemid: 0, docCookie: _rdtCookie);
                     }
                 }
 
