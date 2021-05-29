@@ -419,7 +419,7 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.ProjectSystem
             }
         }
 
-        public sealed class BatchScope : IDisposable
+        public sealed class BatchScope : IDisposable, IAsyncDisposable
         {
             private readonly VisualStudioProject _project;
 
@@ -435,186 +435,205 @@ namespace Microsoft.VisualStudio.LanguageServices.Implementation.ProjectSystem
             {
                 if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
                 {
-                    _project.OnBatchScopeDisposed();
+                    Contract.ThrowIfFalse(_project.OnBatchScopeDisposedMaybeAsync(useAsync: false).IsCompleted);
+                }
+            }
+
+            public ValueTask DisposeAsync()
+            {
+                if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
+                {
+                    return _project.OnBatchScopeDisposedMaybeAsync(useAsync: true);
+                }
+                else
+                {
+                    return ValueTaskFactory.CompletedTask;
                 }
             }
         }
 
-        private void OnBatchScopeDisposed()
+        private static readonly SemaphoreSlim s_ContentionLimiter = new SemaphoreSlim(initialCount: 1);
+
+        private async ValueTask OnBatchScopeDisposedMaybeAsync(bool useAsync)
         {
-            lock (_gate)
+            // HACK: if we're applying large batch scopes, we can end up on a lot of contention on the monitor lock in the main Workspace;
+            // to limit that we'll allow an async lock here.
+            using (useAsync ? await s_ContentionLimiter.DisposableWaitAsync().ConfigureAwait(false) : s_ContentionLimiter.DisposableWait())
             {
-                _activeBatchScopes--;
-
-                if (_activeBatchScopes > 0)
+                lock (_gate)
                 {
-                    return;
-                }
+                    _activeBatchScopes--;
 
-                var documentFileNamesAdded = ImmutableArray.CreateBuilder<string>();
-                var documentsToOpen = new List<(DocumentId documentId, SourceTextContainer textContainer)>();
-                var additionalDocumentsToOpen = new List<(DocumentId documentId, SourceTextContainer textContainer)>();
-                var analyzerConfigDocumentsToOpen = new List<(DocumentId documentId, SourceTextContainer textContainer)>();
-
-                _workspace.ApplyBatchChangeToWorkspace(solution =>
-                {
-                    var solutionChanges = new SolutionChangeAccumulator(startingSolution: solution);
-
-                    _sourceFiles.UpdateSolutionForBatch(
-                        solutionChanges,
-                        documentFileNamesAdded,
-                        documentsToOpen,
-                        (s, documents) => s.AddDocuments(documents),
-                        WorkspaceChangeKind.DocumentAdded,
-                        (s, ids) => s.RemoveDocuments(ids),
-                        WorkspaceChangeKind.DocumentRemoved);
-
-                    _additionalFiles.UpdateSolutionForBatch(
-                        solutionChanges,
-                        documentFileNamesAdded,
-                        additionalDocumentsToOpen,
-                        (s, documents) =>
-                        {
-                            foreach (var document in documents)
-                            {
-                                s = s.AddAdditionalDocument(document);
-                            }
-
-                            return s;
-                        },
-                        WorkspaceChangeKind.AdditionalDocumentAdded,
-                        (s, ids) => s.RemoveAdditionalDocuments(ids),
-                        WorkspaceChangeKind.AdditionalDocumentRemoved);
-
-                    _analyzerConfigFiles.UpdateSolutionForBatch(
-                        solutionChanges,
-                        documentFileNamesAdded,
-                        analyzerConfigDocumentsToOpen,
-                        (s, documents) => s.AddAnalyzerConfigDocuments(documents),
-                        WorkspaceChangeKind.AnalyzerConfigDocumentAdded,
-                        (s, ids) => s.RemoveAnalyzerConfigDocuments(ids),
-                        WorkspaceChangeKind.AnalyzerConfigDocumentRemoved);
-
-                    // Metadata reference removing. Do this before adding in case this removes a project reference that
-                    // we are also going to add in the same batch. This could happen if case is changing, or we're targeting
-                    // a different output path (say bin vs. obj vs. ref).
-                    foreach (var (path, properties) in _metadataReferencesRemovedInBatch)
+                    if (_activeBatchScopes > 0)
                     {
-                        var projectReference = _workspace.TryRemoveConvertedProjectReference_NoLock(Id, path, properties);
-
-                        if (projectReference != null)
-                        {
-                            solutionChanges.UpdateSolutionForProjectAction(
-                                Id,
-                                solutionChanges.Solution.RemoveProjectReference(Id, projectReference));
-                        }
-                        else
-                        {
-                            // TODO: find a cleaner way to fetch this
-                            var metadataReference = _workspace.CurrentSolution.GetRequiredProject(Id).MetadataReferences.Cast<PortableExecutableReference>()
-                                                                                    .Single(m => m.FilePath == path && m.Properties == properties);
-
-                            _workspace.FileWatchedReferenceFactory.StopWatchingReference(metadataReference);
-
-                            solutionChanges.UpdateSolutionForProjectAction(
-                                Id,
-                                newSolution: solutionChanges.Solution.RemoveMetadataReference(Id, metadataReference));
-                        }
+                        return;
                     }
 
-                    ClearAndZeroCapacity(_metadataReferencesRemovedInBatch);
+                    var documentFileNamesAdded = ImmutableArray.CreateBuilder<string>();
+                    var documentsToOpen = new List<(DocumentId documentId, SourceTextContainer textContainer)>();
+                    var additionalDocumentsToOpen = new List<(DocumentId documentId, SourceTextContainer textContainer)>();
+                    var analyzerConfigDocumentsToOpen = new List<(DocumentId documentId, SourceTextContainer textContainer)>();
 
-                    // Metadata reference adding...
-                    if (_metadataReferencesAddedInBatch.Count > 0)
+                    _workspace.ApplyBatchChangeToWorkspace(solution =>
                     {
-                        var projectReferencesCreated = new List<ProjectReference>();
-                        var metadataReferencesCreated = new List<MetadataReference>();
+                        var solutionChanges = new SolutionChangeAccumulator(startingSolution: solution);
 
-                        foreach (var (path, properties) in _metadataReferencesAddedInBatch)
+                        _sourceFiles.UpdateSolutionForBatch(
+                            solutionChanges,
+                            documentFileNamesAdded,
+                            documentsToOpen,
+                            (s, documents) => s.AddDocuments(documents),
+                            WorkspaceChangeKind.DocumentAdded,
+                            (s, ids) => s.RemoveDocuments(ids),
+                            WorkspaceChangeKind.DocumentRemoved);
+
+                        _additionalFiles.UpdateSolutionForBatch(
+                            solutionChanges,
+                            documentFileNamesAdded,
+                            additionalDocumentsToOpen,
+                            (s, documents) =>
+                            {
+                                foreach (var document in documents)
+                                {
+                                    s = s.AddAdditionalDocument(document);
+                                }
+
+                                return s;
+                            },
+                            WorkspaceChangeKind.AdditionalDocumentAdded,
+                            (s, ids) => s.RemoveAdditionalDocuments(ids),
+                            WorkspaceChangeKind.AdditionalDocumentRemoved);
+
+                        _analyzerConfigFiles.UpdateSolutionForBatch(
+                            solutionChanges,
+                            documentFileNamesAdded,
+                            analyzerConfigDocumentsToOpen,
+                            (s, documents) => s.AddAnalyzerConfigDocuments(documents),
+                            WorkspaceChangeKind.AnalyzerConfigDocumentAdded,
+                            (s, ids) => s.RemoveAnalyzerConfigDocuments(ids),
+                            WorkspaceChangeKind.AnalyzerConfigDocumentRemoved);
+
+                        // Metadata reference removing. Do this before adding in case this removes a project reference that
+                        // we are also going to add in the same batch. This could happen if case is changing, or we're targeting
+                        // a different output path (say bin vs. obj vs. ref).
+                        foreach (var (path, properties) in _metadataReferencesRemovedInBatch)
                         {
-                            var projectReference = _workspace.TryCreateConvertedProjectReference_NoLock(Id, path, properties);
+                            var projectReference = _workspace.TryRemoveConvertedProjectReference_NoLock(Id, path, properties);
 
                             if (projectReference != null)
                             {
-                                projectReferencesCreated.Add(projectReference);
+                                solutionChanges.UpdateSolutionForProjectAction(
+                                    Id,
+                                    solutionChanges.Solution.RemoveProjectReference(Id, projectReference));
                             }
                             else
                             {
-                                var metadataReference = _workspace.FileWatchedReferenceFactory.CreateReferenceAndStartWatchingFile(path, properties);
-                                metadataReferencesCreated.Add(metadataReference);
+                                // TODO: find a cleaner way to fetch this
+                                var metadataReference = _workspace.CurrentSolution.GetRequiredProject(Id).MetadataReferences.Cast<PortableExecutableReference>()
+                                                                                            .Single(m => m.FilePath == path && m.Properties == properties);
+
+                                _workspace.FileWatchedReferenceFactory.StopWatchingReference(metadataReference);
+
+                                solutionChanges.UpdateSolutionForProjectAction(
+                                    Id,
+                                    newSolution: solutionChanges.Solution.RemoveMetadataReference(Id, metadataReference));
                             }
                         }
 
+                        ClearAndZeroCapacity(_metadataReferencesRemovedInBatch);
+
+                        // Metadata reference adding...
+                        if (_metadataReferencesAddedInBatch.Count > 0)
+                        {
+                            var projectReferencesCreated = new List<ProjectReference>();
+                            var metadataReferencesCreated = new List<MetadataReference>();
+
+                            foreach (var (path, properties) in _metadataReferencesAddedInBatch)
+                            {
+                                var projectReference = _workspace.TryCreateConvertedProjectReference_NoLock(Id, path, properties);
+
+                                if (projectReference != null)
+                                {
+                                    projectReferencesCreated.Add(projectReference);
+                                }
+                                else
+                                {
+                                    var metadataReference = _workspace.FileWatchedReferenceFactory.CreateReferenceAndStartWatchingFile(path, properties);
+                                    metadataReferencesCreated.Add(metadataReference);
+                                }
+                            }
+
+                            solutionChanges.UpdateSolutionForProjectAction(
+                                Id,
+                                solutionChanges.Solution.AddProjectReferences(Id, projectReferencesCreated)
+                                                        .AddMetadataReferences(Id, metadataReferencesCreated));
+
+                            ClearAndZeroCapacity(_metadataReferencesAddedInBatch);
+                        }
+
+                        // Project reference adding...
                         solutionChanges.UpdateSolutionForProjectAction(
                             Id,
-                            solutionChanges.Solution.AddProjectReferences(Id, projectReferencesCreated)
-                                                    .AddMetadataReferences(Id, metadataReferencesCreated));
+                            newSolution: solutionChanges.Solution.AddProjectReferences(Id, _projectReferencesAddedInBatch));
+                        ClearAndZeroCapacity(_projectReferencesAddedInBatch);
 
-                        ClearAndZeroCapacity(_metadataReferencesAddedInBatch);
-                    }
+                        // Project reference removing...
+                        foreach (var projectReference in _projectReferencesRemovedInBatch)
+                        {
+                            solutionChanges.UpdateSolutionForProjectAction(
+                                Id,
+                                newSolution: solutionChanges.Solution.RemoveProjectReference(Id, projectReference));
+                        }
 
-                    // Project reference adding...
-                    solutionChanges.UpdateSolutionForProjectAction(
-                        Id,
-                        newSolution: solutionChanges.Solution.AddProjectReferences(Id, _projectReferencesAddedInBatch));
-                    ClearAndZeroCapacity(_projectReferencesAddedInBatch);
+                        ClearAndZeroCapacity(_projectReferencesRemovedInBatch);
 
-                    // Project reference removing...
-                    foreach (var projectReference in _projectReferencesRemovedInBatch)
+                        // Analyzer reference adding...
+                        solutionChanges.UpdateSolutionForProjectAction(
+                            Id,
+                            newSolution: solutionChanges.Solution.AddAnalyzerReferences(Id, _analyzersAddedInBatch.Select(a => a.GetReference())));
+                        ClearAndZeroCapacity(_analyzersAddedInBatch);
+
+                        // Analyzer reference removing...
+                        foreach (var analyzerReference in _analyzersRemovedInBatch)
+                        {
+                            solutionChanges.UpdateSolutionForProjectAction(
+                                Id,
+                                newSolution: solutionChanges.Solution.RemoveAnalyzerReference(Id, analyzerReference.GetReference()));
+                        }
+
+                        ClearAndZeroCapacity(_analyzersRemovedInBatch);
+
+                        // Other property modifications...
+                        foreach (var propertyModification in _projectPropertyModificationsInBatch)
+                        {
+                            solutionChanges.UpdateSolutionForProjectAction(
+                                Id,
+                                propertyModification(solutionChanges.Solution));
+                        }
+
+                        ClearAndZeroCapacity(_projectPropertyModificationsInBatch);
+
+                        return solutionChanges;
+                    });
+
+                    foreach (var (documentId, textContainer) in documentsToOpen)
                     {
-                        solutionChanges.UpdateSolutionForProjectAction(
-                            Id,
-                            newSolution: solutionChanges.Solution.RemoveProjectReference(Id, projectReference));
+                        _workspace.ApplyChangeToWorkspace(w => w.OnDocumentOpened(documentId, textContainer));
                     }
 
-                    ClearAndZeroCapacity(_projectReferencesRemovedInBatch);
-
-                    // Analyzer reference adding...
-                    solutionChanges.UpdateSolutionForProjectAction(
-                        Id,
-                        newSolution: solutionChanges.Solution.AddAnalyzerReferences(Id, _analyzersAddedInBatch.Select(a => a.GetReference())));
-                    ClearAndZeroCapacity(_analyzersAddedInBatch);
-
-                    // Analyzer reference removing...
-                    foreach (var analyzerReference in _analyzersRemovedInBatch)
+                    foreach (var (documentId, textContainer) in additionalDocumentsToOpen)
                     {
-                        solutionChanges.UpdateSolutionForProjectAction(
-                            Id,
-                            newSolution: solutionChanges.Solution.RemoveAnalyzerReference(Id, analyzerReference.GetReference()));
+                        _workspace.ApplyChangeToWorkspace(w => w.OnAdditionalDocumentOpened(documentId, textContainer));
                     }
 
-                    ClearAndZeroCapacity(_analyzersRemovedInBatch);
-
-                    // Other property modifications...
-                    foreach (var propertyModification in _projectPropertyModificationsInBatch)
+                    foreach (var (documentId, textContainer) in analyzerConfigDocumentsToOpen)
                     {
-                        solutionChanges.UpdateSolutionForProjectAction(
-                            Id,
-                            propertyModification(solutionChanges.Solution));
+                        _workspace.ApplyChangeToWorkspace(w => w.OnAnalyzerConfigDocumentOpened(documentId, textContainer));
                     }
 
-                    ClearAndZeroCapacity(_projectPropertyModificationsInBatch);
-
-                    return solutionChanges;
-                });
-
-                foreach (var (documentId, textContainer) in documentsToOpen)
-                {
-                    _workspace.ApplyChangeToWorkspace(w => w.OnDocumentOpened(documentId, textContainer));
+                    // Check for those files being opened to start wire-up if necessary
+                    _workspace.QueueCheckForFilesBeingOpen(documentFileNamesAdded.ToImmutable());
                 }
-
-                foreach (var (documentId, textContainer) in additionalDocumentsToOpen)
-                {
-                    _workspace.ApplyChangeToWorkspace(w => w.OnAdditionalDocumentOpened(documentId, textContainer));
-                }
-
-                foreach (var (documentId, textContainer) in analyzerConfigDocumentsToOpen)
-                {
-                    _workspace.ApplyChangeToWorkspace(w => w.OnAnalyzerConfigDocumentOpened(documentId, textContainer));
-                }
-
-                // Check for those files being opened to start wire-up if necessary
-                _workspace.QueueCheckForFilesBeingOpen(documentFileNamesAdded.ToImmutable());
             }
         }
 
