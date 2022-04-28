@@ -12,6 +12,11 @@
         <target state="translated">Copia della selezione nella finestra interattiva.</target>
         <note />
       </trans-unit>
+      <trans-unit id="End_Block_Hints">
+        <source>End Block Hints</source>
+        <target state="new">End Block Hints</target>
+        <note>Used in fonts and colors</note>
+      </trans-unit>
       <trans-unit id="Enter_to_rename_shift_enter_to_preview">
         <source>Enter to rename, Shift+Enter to preview</source>
         <target state="translated">INVIO per rinominare, MAIUSC+INVIO per visualizzare l'anteprima</target>

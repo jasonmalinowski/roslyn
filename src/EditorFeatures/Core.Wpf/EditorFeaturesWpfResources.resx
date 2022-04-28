@@ -156,4 +156,8 @@
   <data name="Enter_to_rename_shift_enter_to_preview" xml:space="preserve">
     <value>Enter to rename, Shift+Enter to preview</value>
   </data>
+  <data name="End_Block_Hints" xml:space="preserve">
+    <value>End Block Hints</value>
+    <comment>Used in fonts and colors</comment>
+  </data>
 </root>

@@ -12,6 +12,11 @@
         <target state="translated">선택 영역을 대화형 창으로 복사하는 중입니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="End_Block_Hints">
+        <source>End Block Hints</source>
+        <target state="new">End Block Hints</target>
+        <note>Used in fonts and colors</note>
+      </trans-unit>
       <trans-unit id="Enter_to_rename_shift_enter_to_preview">
         <source>Enter to rename, Shift+Enter to preview</source>
         <target state="translated">이름을 바꾸려면 Enter 키를, 미리 보려면 Shift+Enter 키를 누르세요.</target>
