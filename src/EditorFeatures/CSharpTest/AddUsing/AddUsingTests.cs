@@ -5,10 +5,13 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Threading.Tasks;
+using MessagePack;
+using MessagePack.Resolvers;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.Completion;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Test.Utilities;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.Remote.Testing;
 using Microsoft.CodeAnalysis.Tags;
@@ -4085,6 +4088,15 @@ namespace X
         }
     }
 }", testHost);
+        }
+
+        [Fact]
+        public void TestDeserialize()
+        {
+            var bytes = System.Convert.FromBase64String("kpGS2bBNaWNyb3NvZnQuQ29kZUFuYWx5c2lzLkRpYWdub3N0aWNzLkNTaGFycC5DU2hhcnBDb21waWxlckRpYWdub3N0aWNBbmFseXplciwgTWljcm9zb2Z0LkNvZGVBbmFseXNpcy5DU2hhcnAsIFZlcnNpb249NDIuNDIuNDIuNDIsIEN1bHR1cmU9bmV1dHJhbCwgUHVibGljS2V5VG9rZW49MzFiZjM4NTZhZDM2NGUzNZSQkZKTktkkZGVkNjg2MmMtOGJhNy00NDA5LWI1N2MtMWIzZDZhMDlmNWUxpFRlc3TZJDEzMTUxZDQ3LWY0NTUtNGNiYS04YmFmLWYxYTg5YTFiODMzOKh0ZXN0MS5jc5LcABGmQ1MwMjQ2qENvbXBpbGVy2XZUaGUgdHlwZSBvciBuYW1lc3BhY2UgbmFtZSAnRGF0ZVRpbWUnIGNvdWxkIG5vdCBiZSBmb3VuZCAoYXJlIHlvdSBtaXNzaW5nIGEgdXNpbmcgZGlyZWN0aXZlIG9yIGFuIGFzc2VtYmx5IHJlZmVyZW5jZT8pAwPDAJOoQ29tcGlsZXKpVGVsZW1ldHJ5r05vdENvbmZpZ3VyYWJsZYCS2SRkZWQ2ODYyYy04YmE3LTQ0MDktYjU3Yy0xYjNkNmEwOWY1ZTGkVGVzdJOTqHRlc3QxLmNzkpIICJIIEMKTktkkZGVkNjg2MmMtOGJhNy00NDA5LWI1N2MtMWIzZDZhMDlmNWUxpFRlc3TZJDEzMTUxZDQ3LWY0NTUtNGNiYS04YmFmLWYxYTg5YTFiODMzOKh0ZXN0MS5jc5OodGVzdDEuY3OSkggIkggQwpCiQyOgoNlGaHR0cHM6Ly9tc2RuLm1pY3Jvc29mdC5jb20vcXVlcnkvcm9zbHluLnF1ZXJ5P2FwcElkPXJvc2x5biZrPWsoQ1MwMjQ2KcLcABGmQ1MwMTY4qENvbXBpbGVy2StUaGUgdmFyaWFibGUgJ2QnIGlzIGRlY2xhcmVkIGJ1dCBuZXZlciB1c2VkAgLDA5KoQ29tcGlsZXKpVGVsZW1ldHJ5gJLZJGRlZDY4NjJjLThiYTctNDQwOS1iNTdjLTFiM2Q2YTA5ZjVlMaRUZXN0k5OodGVzdDEuY3OSkggRkggSwpOS2SRkZWQ2ODYyYy04YmE3LTQ0MDktYjU3Yy0xYjNkNmEwOWY1ZTGkVGVzdNkkMTMxNTFkNDctZjQ1NS00Y2JhLThiYWYtZjFhODlhMWI4MzM4qHRlc3QxLmNzk6h0ZXN0MS5jc5KSCBGSCBLCkKJDI9kjVmFyaWFibGUgaXMgZGVjbGFyZWQgYnV0IG5ldmVyIHVzZWSg2UZodHRwczovL21zZG4ubWljcm9zb2Z0LmNvbS9xdWVyeS9yb3NseW4ucXVlcnk/YXBwSWQ9cm9zbHluJms9ayhDUzAxNjgpwpCQkZLZsE1pY3Jvc29mdC5Db2RlQW5hbHlzaXMuRGlhZ25vc3RpY3MuQ1NoYXJwLkNTaGFycENvbXBpbGVyRGlhZ25vc3RpY0FuYWx5emVyLCBNaWNyb3NvZnQuQ29kZUFuYWx5c2lzLkNTaGFycCwgVmVyc2lvbj00Mi40Mi40Mi40MiwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj0zMWJmMzg1NmFkMzY0ZTM13AAUAQAAAQABAAAAAAAAAAAAAAAAzgAPD27D");
+            var resolver = CompositeResolver.Create(Microsoft.CodeAnalysis.Remote.MessagePackFormatters.Formatters, new[] { StandardResolverAllowPrivate.Instance });
+            var options = MessagePack.MessagePackSerializerOptions.Standard.WithResolver(resolver);
+            var deserialized = MessagePackSerializer.Deserialize<SerializableDiagnosticAnalysisResults>(bytes, options);
         }
 
         [Theory]

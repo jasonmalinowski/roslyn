@@ -20,9 +20,9 @@ namespace Microsoft.CodeAnalysis.Remote
     /// Defines MessagePack formatters for public types without a public constructor suitable for deserialization.
     /// Roslyn internal types should always be annotated with <see cref="DataContractAttribute"/> and have the right constructor.
     /// </summary>
-    internal sealed class MessagePackFormatters
+    public sealed class MessagePackFormatters
     {
-        internal static readonly ImmutableArray<IMessagePackFormatter> Formatters = ImmutableArray.Create<IMessagePackFormatter>(
+        public static readonly ImmutableArray<IMessagePackFormatter> Formatters = ImmutableArray.Create<IMessagePackFormatter>(
             SolutionIdFormatter.Instance,
             ProjectIdFormatter.Instance,
             DocumentIdFormatter.Instance,
