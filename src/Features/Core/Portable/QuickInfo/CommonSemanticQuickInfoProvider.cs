@@ -33,17 +33,6 @@ namespace Microsoft.CodeAnalysis.QuickInfo
                 services, semanticModel, token, tokenInformation, supportedPlatforms, context.Options, cancellationToken).ConfigureAwait(false);
         }
 
-        protected override async Task<QuickInfoItem?> BuildQuickInfoAsync(
-            CommonQuickInfoContext context, SyntaxToken token)
-        {
-            var tokenInformation = BindToken(context.Services, context.SemanticModel, token, context.CancellationToken);
-            if (tokenInformation.Symbols.IsDefaultOrEmpty)
-                return null;
-
-            return await CreateContentAsync(
-                context.Services, context.SemanticModel, token, tokenInformation, supportedPlatforms: null, context.Options, context.CancellationToken).ConfigureAwait(false);
-        }
-
         private async Task<(TokenInformation tokenInformation, SupportedPlatformData? supportedPlatforms)> ComputeQuickInfoDataAsync(
             QuickInfoContext context,
             SyntaxToken token)
