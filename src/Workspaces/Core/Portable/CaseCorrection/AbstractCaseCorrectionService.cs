@@ -19,6 +19,7 @@ internal abstract partial class AbstractCaseCorrectionService : ICaseCorrectionS
 {
     protected abstract void AddReplacements(SemanticModel? semanticModel, SyntaxNode root, ImmutableArray<TextSpan> spans, ConcurrentDictionary<SyntaxToken, SyntaxToken> replacements, CancellationToken cancellationToken);
 
+    public const int Test = 55;
     public async Task<Document> CaseCorrectAsync(Document document, ImmutableArray<TextSpan> spans, CancellationToken cancellationToken)
     {
         if (!spans.Any())

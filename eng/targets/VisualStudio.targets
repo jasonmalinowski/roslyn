@@ -23,7 +23,7 @@
       <Visible>false</Visible>
     </VSIXSourceItem>
   </ItemDefinitionGroup>
-  
+
   <!-- CPS doesn't show these items by default, but we want to show them. -->
   <ItemGroup>
     <AvailableItemName Include="VSCTCompile" />
@@ -60,7 +60,7 @@
     -->
     <ItemGroup>
       <_NuGetPackageToIncludeInVsix Include="@(PackageReference)" Condition="'%(PackageReference.IncludeInVsix)' == 'true' or '%(PackageReference.PkgDefEntry)' != ''"/>
-      
+
       <_RuntimeAssetsByPackageId Include="@(ReferenceCopyLocalPaths->'%(NuGetPackageId)')" Condition="%(ReferenceCopyLocalPaths.AssetType) == 'runtime'">
         <Path>%(ReferenceCopyLocalPaths.Identity)</Path>
       </_RuntimeAssetsByPackageId>
@@ -149,7 +149,7 @@
 
   <!--
     Workaround for missing dependency publishing feature in the VS SDK.
-    
+
     Relies on the following convention: When a project reference publish outputs (i.e. more than standard build outputs) need to be packaged into a VSIX,
     the project should define PublishedProjectOutputGroup target and include it in ProjectRefrence.IncludeOutputGroupsInVSIX.
 
@@ -158,9 +158,10 @@
 
     Target PublishProjectReferencesForVsixCreation will take care of publishing for all ProjectReferences with PublishedProjectOutputGroup.
   -->
-  
+
   <PropertyGroup>
     <CreateVsixContainerDependsOn>$(CreateVsixContainerDependsOn);PublishProjectReferencesForVsixCreation</CreateVsixContainerDependsOn>
+    <CollectUpToDateCheckInputDesignTimeDependsOn>$(CollectUpToDateCheckInputDesignTimeDependsOn);AddUpToDateCheckItemsForPublishProjectReferences</CollectUpToDateCheckInputDesignTimeDependsOn>
   </PropertyGroup>
 
   <Target Name="PublishProjectReferencesForVsixCreation">
@@ -173,5 +174,22 @@
              Properties="%(_ProjectsToPublish.SetConfiguration);%(_ProjectsToPublish.SetPlatform);%(_ProjectsToPublish.SetTargetFramework)"
              Targets="PublishVsixItems"
              RebaseOutputs="true" />
+  </Target>
+
+  <Target Name="AddUpToDateCheckItemsForPublishProjectReferences">
+    <ItemGroup>
+      <_ProjectsToPublishForUpToDateCheck Include="@(ProjectReference)" Condition="$([MSBuild]::ValueOrDefault('%(ProjectReference.IncludeOutputGroupsInVSIX)', '').Contains('PublishedProjectOutputGroup'))"/>
+    </ItemGroup>
+      <MSBuild Projects="@(_ProjectsToPublishForUpToDateCheck)"
+             BuildInParallel="$(BuildInParallel)"
+             Properties="%(_ProjectsToPublish.SetConfiguration);%(_ProjectsToPublish.SetPlatform);%(_ProjectsToPublish.SetTargetFramework)"
+             Targets="PublishItemsOutputGroup"
+             RebaseOutputs="true">
+          <Output TaskParameter="TargetOutputs" ItemName="_PublishUpToDateInputs" />
+      </MSBuild>
+
+      <ItemGroup>
+        <UpToDateCheckInput Include="@(_PublishUpToDateInputs)" Set="VSIX" />
+      </ItemGroup>
   </Target>
 </Project>
