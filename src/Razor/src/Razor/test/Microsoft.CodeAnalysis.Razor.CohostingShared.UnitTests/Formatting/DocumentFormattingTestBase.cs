@@ -36,6 +36,7 @@ public abstract class DocumentFormattingTestBase(ITestOutputHelper testOutputHel
         bool inGlobalNamespace = false,
         bool codeBlockBraceOnNextLine = false,
         AttributeIndentStyle attributeIndentStyle = AttributeIndentStyle.AlignWithFirst,
+        bool ignoreIndentationInScriptOrStyleBlocksWithComplexRazor = true,
         bool insertSpaces = true,
         int tabSize = 4,
         bool allowDiagnostics = false,
@@ -100,7 +101,16 @@ public abstract class DocumentFormattingTestBase(ITestOutputHelper testOutputHel
             ? spans.First()
             : default;
 
-        var edits = await GetFormattingEditsAsync(document, htmlEdits, span, codeBlockBraceOnNextLine, attributeIndentStyle, insertSpaces, tabSize);
+        var edits = await GetFormattingEditsAsync(
+            document,
+            htmlEdits,
+            span,
+            codeBlockBraceOnNextLine,
+            attributeIndentStyle,
+            insertSpaces,
+            tabSize,
+            csharpSyntaxFormattingOptions: null,
+            ignoreIndentationInScriptOrStyleBlocksWithComplexRazor);
 
         if (edits is null)
         {
@@ -123,7 +133,8 @@ public abstract class DocumentFormattingTestBase(ITestOutputHelper testOutputHel
         AttributeIndentStyle attributeIndentStyle,
         bool insertSpaces,
         int tabSize,
-        CSharpSyntaxFormattingOptions? csharpSyntaxFormattingOptions = null)
+        CSharpSyntaxFormattingOptions? csharpSyntaxFormattingOptions,
+        bool ignoreIndentationInScriptOrStyleBlocksWithComplexRazor)
     {
         var requestInvoker = new TestHtmlRequestInvoker([(Methods.TextDocumentFormattingName, htmlEdits)]);
 
@@ -131,6 +142,7 @@ public abstract class DocumentFormattingTestBase(ITestOutputHelper testOutputHel
         {
             CodeBlockBraceOnNextLine = codeBlockBraceOnNextLine,
             AttributeIndentStyle = attributeIndentStyle,
+            IgnoreIndentationInScriptOrStyleBlocksWithComplexRazor = ignoreIndentationInScriptOrStyleBlocksWithComplexRazor,
         });
 
         var edits = await GetFormattingEditsInternalAsync(span, insertSpaces, tabSize, document, requestInvoker, ClientSettingsManager, csharpSyntaxFormattingOptions);

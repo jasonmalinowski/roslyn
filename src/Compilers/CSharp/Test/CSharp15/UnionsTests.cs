@@ -16607,21 +16607,24 @@ class Program
 [System.Runtime.CompilerServices.Union]
 class S1 : S1.IUnionMembers
 {
-    private readonly object _value;
-    S1(int x)
-    {
-        System.Console.Write(""int {"");
-        System.Console.Write(x);
-        System.Console.Write(""} "");
-        _value = x;
-    }
+    object IUnionMembers.Value => throw null!;
 
-    object IUnionMembers.Value => _value;
+    public interface IUnionMembers  
+    {
+        public static S1? Create(int x) => throw null!;
+        public static S1 Create(string x) => throw null!;
+        public object Value { get; }
+    }
+}
+
+[System.Runtime.CompilerServices.Union]
+class S2<T> : S2<T>.IUnionMembers where T : class?
+{
+    object IUnionMembers.Value => throw null!;
     
     public interface IUnionMembers  
     {
-        public static S1? Create(int x) => new S1(x);
-
+        public static S2<T?> Create(int x) => throw null!;
         public object Value { get; }
     }
 }
@@ -16630,15 +16633,46 @@ class Program
 {
     static S1 Test1()
     {
+#line 100
         return 10;
     }   
+
+    static S1 Test2()
+    {
+#line 200
+        return 10!;
+    }   
+
+    static S2<T> Test3<T>() where T : class
+    {
+#line 300
+        return 10;
+    }   
+
+    static S2<T> Test4<T>() where T : class
+    {
+#line 400
+        return 10!;
+    }   
+
+    static S1 Test5(bool b, int x, string y)
+    {
+#line 500
+        return b ? x : y;
+    }
 }
 ";
             var comp = CreateCompilation([src, UnionAttributeSource]);
             comp.VerifyDiagnostics(
-                // (30,16): warning CS8603: Possible null reference return.
+                // (100,16): warning CS8603: Possible null reference return.
                 //         return 10;
-                Diagnostic(ErrorCode.WRN_NullReferenceReturn, "10").WithLocation(30, 16)
+                Diagnostic(ErrorCode.WRN_NullReferenceReturn, "10").WithLocation(100, 16),
+                // (300,16): warning CS8619: Nullability of reference types in value of type 'S2<T?>' doesn't match target type 'S2<T>'.
+                //         return 10;
+                Diagnostic(ErrorCode.WRN_NullabilityMismatchInAssignment, "10").WithArguments("S2<T?>", "S2<T>").WithLocation(300, 16),
+                // (500,16): warning CS8603: Possible null reference return.
+                //         return b ? x : y;
+                Diagnostic(ErrorCode.WRN_NullReferenceReturn, "b ? x : y").WithLocation(500, 16)
                 );
         }
 
@@ -21934,6 +21968,1327 @@ union U(string, int);
 
             comp = CreateCompilation([source, UnionAttributeSource, IUnionSource], options: TestOptions.DebugDll);
             comp.VerifyDiagnostics();
+        }
+
+        [Fact]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/85978")]
+        public void NullableAnalysis_73_State_From_Constructor()
+        {
+            var src = @"
+#nullable enable
+
+class C1 { public static implicit operator C1?(string s) => null; }
+
+[System.Runtime.CompilerServices.Union]
+class S1
+{
+  public S1(C1? x) => Value = x;
+  public object? Value { get; set; }
+}
+
+class Program
+{
+    static void Test1()
+    {
+        var s = new S1("""");
+#line 100
+        _ = s.Value.ToString();
+    } 
+}
+";
+            var comp = CreateCompilation([src, UnionAttributeSource]);
+            comp.VerifyDiagnostics(
+                // (100,13): warning CS8602: Dereference of a possibly null reference.
+                //         _ = s.Value.ToString();
+                Diagnostic(ErrorCode.WRN_NullReferenceReceiver, "s.Value").WithLocation(100, 13)
+                );
+        }
+
+        [Fact]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/85978")]
+        public void NullableAnalysis_74_State_From_Constructor()
+        {
+            var src = @"
+#nullable enable
+
+class C1 { public static implicit operator C1(string? s) => new C1(); }
+
+[System.Runtime.CompilerServices.Union]
+class S1
+{
+  public S1(C1? x) => Value = x;
+  public object? Value { get; set; }
+}
+
+class Program
+{
+    static void Test1()
+    {
+        var s = new S1((string?)null);
+#line 100
+        _ = s.Value.ToString();
+    } 
+}
+";
+            var comp = CreateCompilation([src, UnionAttributeSource]);
+            comp.VerifyDiagnostics();
+        }
+
+        [Fact]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/85978")]
+        public void NullableAnalysis_75_State_From_Constructor()
+        {
+            var src = @"
+#nullable enable
+
+class C1 { public static implicit operator C1?(string s) => null; }
+
+[System.Runtime.CompilerServices.Union]
+class S1
+{
+  public S1(C1 x) => Value = x;
+  public object? Value { get; set; }
+}
+
+class Program
+{
+    static void Test1()
+    {
+#line 100
+        var s = new S1("""");
+#line 150
+        _ = s.Value.ToString();
+    } 
+
+    static void Test2()
+    {
+#line 200
+        var s = new S1(null);
+#line 250
+        _ = s.Value.ToString();
+    } 
+}
+";
+            var comp = CreateCompilation([src, UnionAttributeSource]);
+            comp.VerifyDiagnostics(
+                // (100,24): warning CS8604: Possible null reference argument for parameter 'x' in 'S1.S1(C1 x)'.
+                //         var s = new S1("");
+                Diagnostic(ErrorCode.WRN_NullReferenceArgument, @"""""").WithArguments("x", "S1.S1(C1 x)").WithLocation(100, 24),
+                // (150,13): warning CS8602: Dereference of a possibly null reference.
+                //         _ = s.Value.ToString();
+                Diagnostic(ErrorCode.WRN_NullReferenceReceiver, "s.Value").WithLocation(150, 13),
+                // (200,24): warning CS8625: Cannot convert null literal to non-nullable reference type.
+                //         var s = new S1(null);
+                Diagnostic(ErrorCode.WRN_NullAsNonNullable, "null").WithLocation(200, 24),
+                // (250,13): warning CS8602: Dereference of a possibly null reference.
+                //         _ = s.Value.ToString();
+                Diagnostic(ErrorCode.WRN_NullReferenceReceiver, "s.Value").WithLocation(250, 13)
+                );
+        }
+
+        [Fact]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/85978")]
+        public void NullableAnalysis_76_State_From_Constructor()
+        {
+            var src = @"
+#nullable enable
+
+class C1 { public static implicit operator C1?(string s) => null; }
+
+[System.Runtime.CompilerServices.Union]
+class S1
+{
+  public S1(C1? x) => Value = x;
+  public object? Value { get; set; }
+}
+
+class Program
+{
+    static void Test1()
+    {
+        S1 s = new("""");
+#line 100
+        _ = s.Value.ToString();
+    } 
+}
+";
+            var comp = CreateCompilation([src, UnionAttributeSource]);
+            comp.VerifyDiagnostics(
+                // (100,13): warning CS8602: Dereference of a possibly null reference.
+                //         _ = s.Value.ToString();
+                Diagnostic(ErrorCode.WRN_NullReferenceReceiver, "s.Value").WithLocation(100, 13)
+                );
+        }
+
+        [Fact]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/85978")]
+        public void NullableAnalysis_77_State_From_Constructor()
+        {
+            var src = @"
+#nullable enable
+
+class C1 { public static implicit operator C1(string? s) => new C1(); }
+
+[System.Runtime.CompilerServices.Union]
+class S1
+{
+  public S1(C1? x) => Value = x;
+  public object? Value { get; set; }
+}
+
+class Program
+{
+    static void Test1()
+    {
+        S1 s = new((string?)null);
+#line 100
+        _ = s.Value.ToString();
+    } 
+}
+";
+            var comp = CreateCompilation([src, UnionAttributeSource]);
+            comp.VerifyDiagnostics();
+        }
+
+        [Fact]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/85978")]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/86057")]
+        public void NullableAnalysis_78_State_From_Constructor_PostCondition()
+        {
+            var src = @"
+#nullable enable
+class C1
+{
+    public static implicit operator C1? (string s) => null;
+}
+
+[System.Runtime.CompilerServices.Union]
+class S1
+{
+    public S1([System.Diagnostics.CodeAnalysis.NotNull] C1? x)
+    {
+        if (x is null)
+            throw new System.ArgumentNullException(nameof(x));
+        Value = x;
+    }
+
+    public object? Value { get; set; }
+}
+
+class Program
+{
+    static void Test1()
+    {
+        var s = new S1("""");
+#line 100
+        _ = s.Value.ToString();
+    }
+
+    static void Test2(string? x)
+    {
+        var s = new S2(x);
+#line 200
+        _ = x.ToString();
+    }
+}
+
+class S2
+{
+    public S2([System.Diagnostics.CodeAnalysis.NotNull] C2? x)
+    {
+        if (x is null)
+            throw new System.ArgumentNullException(nameof(x));
+    }
+}
+
+class C2
+{
+    public static implicit operator C2? (string? s) => """";
+}
+";
+            var comp = CreateCompilation([src, UnionAttributeSource, NotNullAttributeDefinition]);
+            // Diagnostic at line 100 is not expected, but it is expected at line 200 - https://github.com/dotnet/roslyn/issues/86057
+            comp.VerifyDiagnostics(
+                // (100,13): warning CS8602: Dereference of a possibly null reference.
+                //         _ = s.Value.ToString();
+                Diagnostic(ErrorCode.WRN_NullReferenceReceiver, "s.Value").WithLocation(100, 13)
+                );
+        }
+
+        [Fact]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/86055")]
+        public void NullableAnalysis_79_State_From_Constructor_Params()
+        {
+            var src = @"
+#nullable enable
+
+class C1
+{
+    public static implicit operator C1? (string s) => null;
+}
+
+[System.Runtime.CompilerServices.Union]
+class S1
+{
+    public S1(params C1?[]? x) => Value = x;
+
+    public object? Value { get; set; }
+}
+
+class Program
+{
+    static void Test1()
+    {
+        var s = new S1("""");
+#line 100
+        _ = s.Value.ToString();
+    }
+}
+";
+            var comp = CreateCompilation([src, UnionAttributeSource]);
+            comp.VerifyDiagnostics();
+        }
+
+        [Fact]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/86055")]
+        public void NullableAnalysis_80_State_From_Constructor_Params()
+        {
+            var src = @"
+#nullable enable
+
+[System.Runtime.CompilerServices.Union]
+class S1
+{
+    public S1(params string?[]? x) => Value = x;
+
+    public object? Value { get; set; }
+}
+
+class Program
+{
+    static void Test1()
+    {
+        var s = new S1("""");
+#line 100
+        _ = s.Value.ToString();
+    }
+
+    static void Test2()
+    {
+        var s = new S1((string?)null);
+#line 200
+        _ = s.Value.ToString();
+    }
+
+    static void Test3()
+    {
+        var s = new S1();
+#line 300
+        _ = s.Value.ToString();
+    }
+}
+";
+            var comp = CreateCompilation([src, UnionAttributeSource]);
+            comp.VerifyDiagnostics();
+        }
+
+        [Fact]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/86055")]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/86064")]
+        public void NullableAnalysis_81_State_From_Constructor_Params()
+        {
+            var src = @"
+#nullable enable
+
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+
+[System.Runtime.CompilerServices.Union]
+class S1
+{
+    public S1(params MyCollection x) => Value = x;
+
+    public object? Value { get; set; }
+}
+
+class Program
+{
+    static void Test1()
+    {
+#line 100
+        var s = new S1("""");
+#line 150
+        _ = s.Value.ToString();
+    }
+
+    static void Test2()
+    {
+#line 200
+        var s = new S1((string?)null);
+#line 250
+        _ = s.Value.ToString();
+    }
+
+    static void Test3()
+    {
+#line 300
+        var s = new S1();
+#line 350
+        _ = s.Value.ToString();
+    }
+
+    static void Test4()
+    {
+#line 400
+        _ = new S1([""""]);
+#line 500
+        _ = new S1([null]);
+#line 600
+        _ = new S1([]);
+    }
+}
+
+[CollectionBuilder(typeof(MyCollectionBuilder), nameof(MyCollectionBuilder.Create))]
+class MyCollection
+{
+    private readonly List<object?> _list;
+    public MyCollection(List<object?> list) { _list = list; }
+    public IEnumerator<object?> GetEnumerator() => _list.GetEnumerator();
+}
+class MyCollectionBuilder
+{
+    public static MyCollection? Create(ReadOnlySpan<object?> items)
+    {
+        return new MyCollection(new List<object?>(items.ToArray()));
+    }
+}
+";
+            var comp = CreateCompilation([src, UnionAttributeSource], targetFramework: TargetFramework.Net100);
+
+            // Note, expecting warnings for lines 100, 150, 200, 250, 300, 350. Tracked by https://github.com/dotnet/roslyn/issues/86064
+            comp.VerifyDiagnostics(
+                // (400,20): warning CS8604: Possible null reference argument for parameter 'x' in 'S1.S1(params MyCollection x)'.
+                //         _ = new S1([""]);
+                Diagnostic(ErrorCode.WRN_NullReferenceArgument, @"[""""]").WithArguments("x", "S1.S1(params MyCollection x)").WithLocation(400, 20),
+                // (500,20): warning CS8604: Possible null reference argument for parameter 'x' in 'S1.S1(params MyCollection x)'.
+                //         _ = new S1([null]);
+                Diagnostic(ErrorCode.WRN_NullReferenceArgument, "[null]").WithArguments("x", "S1.S1(params MyCollection x)").WithLocation(500, 20),
+                // (600,20): warning CS8604: Possible null reference argument for parameter 'x' in 'S1.S1(params MyCollection x)'.
+                //         _ = new S1([]);
+                Diagnostic(ErrorCode.WRN_NullReferenceArgument, "[]").WithArguments("x", "S1.S1(params MyCollection x)").WithLocation(600, 20)
+                );
+        }
+
+        [Fact]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/86055")]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/86064")]
+        public void NullableAnalysis_82_State_From_Constructor_Params()
+        {
+            var src = @"
+#nullable enable
+
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+
+[System.Runtime.CompilerServices.Union]
+class S1
+{
+    public S1(params MyCollection? x) => Value = x;
+
+    public object? Value { get; set; }
+}
+
+class Program
+{
+    static void Test1()
+    {
+        var s = new S1("""");
+#line 100
+        _ = s.Value.ToString();
+    }
+
+    static void Test2()
+    {
+        var s = new S1((string?)null);
+#line 200
+        _ = s.Value.ToString();
+    }
+
+    static void Test3()
+    {
+        var s = new S1();
+#line 300
+        _ = s.Value.ToString();
+    }
+}
+
+[CollectionBuilder(typeof(MyCollectionBuilder), nameof(MyCollectionBuilder.Create))]
+class MyCollection
+{
+    private readonly List<object?> _list;
+    public MyCollection(List<object?> list) { _list = list; }
+    public IEnumerator<object?> GetEnumerator() => _list.GetEnumerator();
+}
+class MyCollectionBuilder
+{
+    public static MyCollection? Create(ReadOnlySpan<object?> items)
+    {
+        return new MyCollection(new List<object?>(items.ToArray()));
+    }
+}
+";
+            var comp = CreateCompilation([src, UnionAttributeSource], targetFramework: TargetFramework.Net100);
+
+            // Note, expecting warnings for lines 100, 200, 300. Tracked by https://github.com/dotnet/roslyn/issues/86064
+            comp.VerifyDiagnostics();
+        }
+
+        [Fact]
+        public void NullableAnalysis_83_State_From_Conversion_Params()
+        {
+            var src = @"
+#nullable enable
+
+[System.Runtime.CompilerServices.Union]
+class S1
+{
+    public S1(params string?[] x) => Value = x;
+
+    public object? Value { get; set; }
+}
+
+class Program
+{
+    static void Test1()
+    {
+#line 100
+        S1 s = """";
+#line 150
+        _ = s.Value.ToString();
+    }
+
+    static void Test2()
+    {
+#line 200
+        S1 s = (string?)null;
+#line 250
+        _ = s.Value.ToString();
+    }
+}
+";
+            var comp = CreateCompilation([src, UnionAttributeSource]);
+
+            comp.VerifyDiagnostics(
+                // (100,16): error CS0029: Cannot implicitly convert type 'string' to 'S1'
+                //         S1 s = "";
+                Diagnostic(ErrorCode.ERR_NoImplicitConv, @"""""").WithArguments("string", "S1").WithLocation(100, 16),
+                // (200,16): error CS0029: Cannot implicitly convert type 'string' to 'S1'
+                //         S1 s = (string?)null;
+                Diagnostic(ErrorCode.ERR_NoImplicitConv, "(string?)null").WithArguments("string", "S1").WithLocation(200, 16),
+                // (200,16): warning CS8600: Converting null literal or possible null value to non-nullable type.
+                //         S1 s = (string?)null;
+                Diagnostic(ErrorCode.WRN_ConvertingNullableToNonNullable, "(string?)null").WithLocation(200, 16),
+                // (250,13): warning CS8602: Dereference of a possibly null reference.
+                //         _ = s.Value.ToString();
+                Diagnostic(ErrorCode.WRN_NullReferenceReceiver, "s").WithLocation(250, 13)
+                );
+        }
+
+        [Fact]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/86225")]
+        public void NullableAnalysis_84_Conversion_UnderConditional()
+        {
+            var src = @"
+#nullable enable
+
+union U1(int, string);
+
+struct U2
+{
+    public static implicit operator U2(string s) => new U2();
+}
+
+class Program
+{
+    static U1? Test1(bool b, U1 u1)
+    {
+#line 100
+        return b ? u1 : null;
+    }
+
+    static U1 Test2()
+    {
+#line 200
+        return null;
+    }
+
+    static U1? Test3(bool b, U1 u1)
+    {
+#line 300
+        return b ? u1 : (U1)null;
+    }
+
+    static U1? Test4(bool b, U1 u1)
+    {
+#line 400
+        return b switch { true => u1, false => null };
+    }
+
+    static U1? Test5(bool b, U1 u1)
+    {
+#line 500
+        return b switch { true => u1, false => (U1)null };
+    }
+
+    static U2? Test6(bool b, U2 u2)
+    {
+#line 600
+        return b ? u2 : null;
+    }
+
+    static U2? Test7(bool b, U2 u2)
+    {
+#line 700
+        return b switch { true => u2, false => null };
+    }
+
+    static string? Test8(bool b, string s)
+    {
+#line 800
+        return b ? s : null;
+    }
+
+    static string? Test9(bool b, string s)
+    {
+#line 900
+        return b switch { true => s, false => null };
+    }
+
+    static string Test10(bool b, string s)
+    {
+#line 1000
+        return b ? s : null;
+    }
+
+    static string Test11(bool b, string s)
+    {
+#line 1100
+        return b switch { true => s, false => null };
+    }
+}
+";
+            var comp = CreateCompilation([src, UnionAttributeSource, IUnionSource]);
+
+            var verifier = CompileAndVerify(comp).VerifyDiagnostics(
+                // (100,25): warning CS8625: Cannot convert null literal to non-nullable reference type.
+                //         return b ? u1 : null;
+                Diagnostic(ErrorCode.WRN_NullAsNonNullable, "null").WithLocation(100, 25),
+                // (200,16): warning CS8625: Cannot convert null literal to non-nullable reference type.
+                //         return null;
+                Diagnostic(ErrorCode.WRN_NullAsNonNullable, "null").WithLocation(200, 16),
+                // (300,25): warning CS8604: Possible null reference argument for parameter 'value' in 'U1.U1(string value)'.
+                //         return b ? u1 : (U1)null;
+                Diagnostic(ErrorCode.WRN_NullReferenceArgument, "(U1)null").WithArguments("value", "U1.U1(string value)").WithLocation(300, 25),
+                // (400,48): warning CS8625: Cannot convert null literal to non-nullable reference type.
+                //         return b switch { true => u1, false => null };
+                Diagnostic(ErrorCode.WRN_NullAsNonNullable, "null").WithLocation(400, 48),
+                // (500,48): warning CS8604: Possible null reference argument for parameter 'value' in 'U1.U1(string value)'.
+                //         return b switch { true => u1, false => (U1)null };
+                Diagnostic(ErrorCode.WRN_NullReferenceArgument, "(U1)null").WithArguments("value", "U1.U1(string value)").WithLocation(500, 48),
+                // (600,25): warning CS8625: Cannot convert null literal to non-nullable reference type.
+                //         return b ? u2 : null;
+                Diagnostic(ErrorCode.WRN_NullAsNonNullable, "null").WithLocation(600, 25),
+                // (700,48): warning CS8625: Cannot convert null literal to non-nullable reference type.
+                //         return b switch { true => u2, false => null };
+                Diagnostic(ErrorCode.WRN_NullAsNonNullable, "null").WithLocation(700, 48),
+                // (1000,16): warning CS8603: Possible null reference return.
+                //         return b ? s : null;
+                Diagnostic(ErrorCode.WRN_NullReferenceReturn, "b ? s : null").WithLocation(1000, 16),
+                // (1100,16): warning CS8603: Possible null reference return.
+                //         return b switch { true => s, false => null };
+                Diagnostic(ErrorCode.WRN_NullReferenceReturn, "b switch { true => s, false => null }").WithLocation(1100, 16)
+                );
+
+            verifier.VerifyIL("Program.Test1", """
+{
+  // Code size       18 (0x12)
+  .maxstack  1
+  IL_0000:  ldarg.0
+  IL_0001:  brtrue.s   IL_000b
+  IL_0003:  ldnull
+  IL_0004:  newobj     "U1..ctor(string)"
+  IL_0009:  br.s       IL_000c
+  IL_000b:  ldarg.1
+  IL_000c:  newobj     "U1?..ctor(U1)"
+  IL_0011:  ret
+}
+""");
+
+            verifier.VerifyIL("Program.Test4", """
+{
+  // Code size       21 (0x15)
+  .maxstack  1
+  .locals init (U1 V_0)
+  IL_0000:  ldarg.0
+  IL_0001:  brfalse.s  IL_0007
+  IL_0003:  ldarg.1
+  IL_0004:  stloc.0
+  IL_0005:  br.s       IL_000e
+  IL_0007:  ldnull
+  IL_0008:  newobj     "U1..ctor(string)"
+  IL_000d:  stloc.0
+  IL_000e:  ldloc.0
+  IL_000f:  newobj     "U1?..ctor(U1)"
+  IL_0014:  ret
+}
+""");
+
+            verifier.VerifyIL("Program.Test6", """
+{
+  // Code size       18 (0x12)
+  .maxstack  1
+  IL_0000:  ldarg.0
+  IL_0001:  brtrue.s   IL_000b
+  IL_0003:  ldnull
+  IL_0004:  call       "U2 U2.op_Implicit(string)"
+  IL_0009:  br.s       IL_000c
+  IL_000b:  ldarg.1
+  IL_000c:  newobj     "U2?..ctor(U2)"
+  IL_0011:  ret
+}
+""");
+
+            verifier.VerifyIL("Program.Test7", """
+{
+  // Code size       21 (0x15)
+  .maxstack  1
+  .locals init (U2 V_0)
+  IL_0000:  ldarg.0
+  IL_0001:  brfalse.s  IL_0007
+  IL_0003:  ldarg.1
+  IL_0004:  stloc.0
+  IL_0005:  br.s       IL_000e
+  IL_0007:  ldnull
+  IL_0008:  call       "U2 U2.op_Implicit(string)"
+  IL_000d:  stloc.0
+  IL_000e:  ldloc.0
+  IL_000f:  newobj     "U2?..ctor(U2)"
+  IL_0014:  ret
+}
+
+""");
+        }
+
+        [Fact]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/86225")]
+        public void NullableAnalysis_85_Conversion_UnderConditional()
+        {
+            var src = @"
+#nullable enable
+
+union U1(int, string);
+
+struct U2
+{
+    public static implicit operator U2(string s) => new U2();
+}
+
+class Program
+{
+    static U1? Test1(bool b, U1 u1)
+    {
+#line 100
+        return b ? null : u1;
+    }
+
+    static U1? Test4(bool b, U1 u1)
+    {
+#line 400
+        return b switch { true => null, false => u1 };
+    }
+
+    static U2? Test6(bool b, U2 u2)
+    {
+#line 600
+        return b ? null : u2;
+    }
+
+    static U2? Test7(bool b, U2 u2)
+    {
+#line 700
+        return b switch { true => null, false => u2 };
+    }
+
+    static string? Test8(bool b, string s)
+    {
+#line 800
+        return b ? null : s;
+    }
+
+    static string? Test9(bool b, string s)
+    {
+#line 900
+        return b switch { true => null, false => s };
+    }
+
+    static string Test10(bool b, string s)
+    {
+#line 1000
+        return b ? null : s;
+    }
+
+    static string Test11(bool b, string s)
+    {
+#line 1100
+        return b switch { true => null, false => s };
+    }
+}
+";
+            var comp = CreateCompilation([src, UnionAttributeSource, IUnionSource]);
+
+            var verifier = CompileAndVerify(comp).VerifyDiagnostics(
+                // (100,20): warning CS8625: Cannot convert null literal to non-nullable reference type.
+                //         return b ? null : u1;
+                Diagnostic(ErrorCode.WRN_NullAsNonNullable, "null").WithLocation(100, 20),
+                // (400,35): warning CS8625: Cannot convert null literal to non-nullable reference type.
+                //         return b switch { true => null, false => u1 };
+                Diagnostic(ErrorCode.WRN_NullAsNonNullable, "null").WithLocation(400, 35),
+                // (600,20): warning CS8625: Cannot convert null literal to non-nullable reference type.
+                //         return b ? null : u2;
+                Diagnostic(ErrorCode.WRN_NullAsNonNullable, "null").WithLocation(600, 20),
+                // (700,35): warning CS8625: Cannot convert null literal to non-nullable reference type.
+                //         return b switch { true => null, false => u2 };
+                Diagnostic(ErrorCode.WRN_NullAsNonNullable, "null").WithLocation(700, 35),
+                // (1000,16): warning CS8603: Possible null reference return.
+                //         return b ? null : s;
+                Diagnostic(ErrorCode.WRN_NullReferenceReturn, "b ? null : s").WithLocation(1000, 16),
+                // (1100,16): warning CS8603: Possible null reference return.
+                //         return b switch { true => null, false => s };
+                Diagnostic(ErrorCode.WRN_NullReferenceReturn, "b switch { true => null, false => s }").WithLocation(1100, 16)
+                );
+
+            verifier.VerifyIL("Program.Test1", """
+{
+  // Code size       18 (0x12)
+  .maxstack  1
+  IL_0000:  ldarg.0
+  IL_0001:  brtrue.s   IL_0006
+  IL_0003:  ldarg.1
+  IL_0004:  br.s       IL_000c
+  IL_0006:  ldnull
+  IL_0007:  newobj     "U1..ctor(string)"
+  IL_000c:  newobj     "U1?..ctor(U1)"
+  IL_0011:  ret
+}
+""");
+
+            verifier.VerifyIL("Program.Test4", """
+{
+  // Code size       21 (0x15)
+  .maxstack  1
+  .locals init (U1 V_0)
+  IL_0000:  ldarg.0
+  IL_0001:  brfalse.s  IL_000c
+  IL_0003:  ldnull
+  IL_0004:  newobj     "U1..ctor(string)"
+  IL_0009:  stloc.0
+  IL_000a:  br.s       IL_000e
+  IL_000c:  ldarg.1
+  IL_000d:  stloc.0
+  IL_000e:  ldloc.0
+  IL_000f:  newobj     "U1?..ctor(U1)"
+  IL_0014:  ret
+}
+""");
+
+            verifier.VerifyIL("Program.Test6", """
+{
+  // Code size       18 (0x12)
+  .maxstack  1
+  IL_0000:  ldarg.0
+  IL_0001:  brtrue.s   IL_0006
+  IL_0003:  ldarg.1
+  IL_0004:  br.s       IL_000c
+  IL_0006:  ldnull
+  IL_0007:  call       "U2 U2.op_Implicit(string)"
+  IL_000c:  newobj     "U2?..ctor(U2)"
+  IL_0011:  ret
+}
+""");
+
+            verifier.VerifyIL("Program.Test7", """
+{
+  // Code size       21 (0x15)
+  .maxstack  1
+  .locals init (U2 V_0)
+  IL_0000:  ldarg.0
+  IL_0001:  brfalse.s  IL_000c
+  IL_0003:  ldnull
+  IL_0004:  call       "U2 U2.op_Implicit(string)"
+  IL_0009:  stloc.0
+  IL_000a:  br.s       IL_000e
+  IL_000c:  ldarg.1
+  IL_000d:  stloc.0
+  IL_000e:  ldloc.0
+  IL_000f:  newobj     "U2?..ctor(U2)"
+  IL_0014:  ret
+}
+""");
+        }
+
+        [Fact]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/86225")]
+        public void NullableAnalysis_86_Conversion_UnderConditional()
+        {
+            var src = @"
+#nullable enable
+
+[System.Runtime.CompilerServices.Union]
+class U1
+{
+    public U1(int x) => throw null!;
+    public U1(string x) => throw null!;
+    public object? Value => throw null!;
+}
+
+class U2
+{
+    public static implicit operator U2(string s) => new U2();
+}
+
+class Program
+{
+    static U1? Test1(bool b, U1 u1)
+    {
+#line 100
+        return b ? u1 : null;
+    }
+
+    static U1 Test2()
+    {
+#line 200
+        return null;
+    }
+
+    static U1? Test3(bool b, U1 u1)
+    {
+#line 300
+        return b ? u1 : (U1)null;
+    }
+
+    static U1? Test4(bool b, U1 u1)
+    {
+#line 400
+        return b switch { true => u1, false => null };
+    }
+
+    static U1? Test5(bool b, U1 u1)
+    {
+#line 500
+        return b switch { true => u1, false => (U1)null };
+    }
+
+    static U2? Test6(bool b, U2 u2)
+    {
+#line 600
+        return b ? u2 : null;
+    }
+
+    static U2? Test7(bool b, U2 u2)
+    {
+#line 700
+        return b switch { true => u2, false => null };
+    }
+
+    static U1 Test8(bool b, U1 u1)
+    {
+#line 800
+        return b ? u1 : null;
+    }
+
+    static U1 Test9(bool b, U1 u1)
+    {
+#line 900
+        return b switch { true => u1, false => null };
+    }
+
+    static U2 Test10(bool b, U2 u2)
+    {
+#line 1000
+        return b ? u2 : null;
+    }
+
+    static U2 Test11(bool b, U2 u2)
+    {
+#line 1100
+        return b switch { true => u2, false => null };
+    }
+}
+";
+            var comp = CreateCompilation([src, UnionAttributeSource]);
+
+            var verifier = CompileAndVerify(comp).VerifyDiagnostics(
+                // (200,16): warning CS8603: Possible null reference return.
+                //         return null;
+                Diagnostic(ErrorCode.WRN_NullReferenceReturn, "null").WithLocation(200, 16),
+                // (300,25): warning CS8600: Converting null literal or possible null value to non-nullable type.
+                //         return b ? u1 : (U1)null;
+                Diagnostic(ErrorCode.WRN_ConvertingNullableToNonNullable, "(U1)null").WithLocation(300, 25),
+                // (500,48): warning CS8600: Converting null literal or possible null value to non-nullable type.
+                //         return b switch { true => u1, false => (U1)null };
+                Diagnostic(ErrorCode.WRN_ConvertingNullableToNonNullable, "(U1)null").WithLocation(500, 48),
+                // (800,16): warning CS8603: Possible null reference return.
+                //         return b ? u1 : null;
+                Diagnostic(ErrorCode.WRN_NullReferenceReturn, "b ? u1 : null").WithLocation(800, 16),
+                // (900,16): warning CS8603: Possible null reference return.
+                //         return b switch { true => u1, false => null };
+                Diagnostic(ErrorCode.WRN_NullReferenceReturn, "b switch { true => u1, false => null }").WithLocation(900, 16),
+                // (1000,16): warning CS8603: Possible null reference return.
+                //         return b ? u2 : null;
+                Diagnostic(ErrorCode.WRN_NullReferenceReturn, "b ? u2 : null").WithLocation(1000, 16),
+                // (1100,16): warning CS8603: Possible null reference return.
+                //         return b switch { true => u2, false => null };
+                Diagnostic(ErrorCode.WRN_NullReferenceReturn, "b switch { true => u2, false => null }").WithLocation(1100, 16)
+                );
+
+            verifier.VerifyIL("Program.Test1", """
+{
+  // Code size        7 (0x7)
+  .maxstack  1
+  IL_0000:  ldarg.0
+  IL_0001:  brtrue.s   IL_0005
+  IL_0003:  ldnull
+  IL_0004:  ret
+  IL_0005:  ldarg.1
+  IL_0006:  ret
+}
+""");
+
+            verifier.VerifyIL("Program.Test4", """
+{
+  // Code size       11 (0xb)
+  .maxstack  1
+  .locals init (U1 V_0)
+  IL_0000:  ldarg.0
+  IL_0001:  brfalse.s  IL_0007
+  IL_0003:  ldarg.1
+  IL_0004:  stloc.0
+  IL_0005:  br.s       IL_0009
+  IL_0007:  ldnull
+  IL_0008:  stloc.0
+  IL_0009:  ldloc.0
+  IL_000a:  ret
+}
+""");
+
+            verifier.VerifyIL("Program.Test6", """
+{
+  // Code size        7 (0x7)
+  .maxstack  1
+  IL_0000:  ldarg.0
+  IL_0001:  brtrue.s   IL_0005
+  IL_0003:  ldnull
+  IL_0004:  ret
+  IL_0005:  ldarg.1
+  IL_0006:  ret
+}
+""");
+
+            verifier.VerifyIL("Program.Test7", """
+{
+  // Code size       11 (0xb)
+  .maxstack  1
+  .locals init (U2 V_0)
+  IL_0000:  ldarg.0
+  IL_0001:  brfalse.s  IL_0007
+  IL_0003:  ldarg.1
+  IL_0004:  stloc.0
+  IL_0005:  br.s       IL_0009
+  IL_0007:  ldnull
+  IL_0008:  stloc.0
+  IL_0009:  ldloc.0
+  IL_000a:  ret
+}
+""");
+        }
+
+        [Fact]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/86225")]
+        public void NullableAnalysis_87_Conversion_UnderConditional()
+        {
+            var src = @"
+#nullable enable
+
+[System.Runtime.CompilerServices.Union]
+class U1
+{
+    public U1(int x) => throw null!;
+    public U1(string x) => throw null!;
+    public object? Value => throw null!;
+}
+
+class U2
+{
+    public static implicit operator U2(string s) => new U2();
+}
+
+class Program
+{
+    static U1? Test1(bool b, U1 u1)
+    {
+#line 100
+        return b ? null : u1;
+    }
+
+    static U1? Test4(bool b, U1 u1)
+    {
+#line 400
+        return b switch { true => null, false => u1 };
+    }
+
+    static U2? Test6(bool b, U2 u2)
+    {
+#line 600
+        return b ? null : u2;
+    }
+
+    static U2? Test7(bool b, U2 u2)
+    {
+#line 700
+        return b switch { true => null, false => u2 };
+    }
+
+    static U1 Test8(bool b, U1 u1)
+    {
+#line 800
+        return b ? null : u1;
+    }
+
+    static U1 Test9(bool b, U1 u1)
+    {
+#line 900
+        return b switch { true => null, false => u1 };
+    }
+
+    static U2 Test10(bool b, U2 u2)
+    {
+#line 1000
+        return b ? null : u2;
+    }
+
+    static U2 Test11(bool b, U2 u2)
+    {
+#line 1100
+        return b switch { true => null, false => u2 };
+    }
+}
+";
+            var comp = CreateCompilation([src, UnionAttributeSource]);
+
+            var verifier = CompileAndVerify(comp).VerifyDiagnostics(
+                // (800,16): warning CS8603: Possible null reference return.
+                //         return b ? null : u1;
+                Diagnostic(ErrorCode.WRN_NullReferenceReturn, "b ? null : u1").WithLocation(800, 16),
+                // (900,16): warning CS8603: Possible null reference return.
+                //         return b switch { true => null, false => u1 };
+                Diagnostic(ErrorCode.WRN_NullReferenceReturn, "b switch { true => null, false => u1 }").WithLocation(900, 16),
+                // (1000,16): warning CS8603: Possible null reference return.
+                //         return b ? null : u2;
+                Diagnostic(ErrorCode.WRN_NullReferenceReturn, "b ? null : u2").WithLocation(1000, 16),
+                // (1100,16): warning CS8603: Possible null reference return.
+                //         return b switch { true => null, false => u2 };
+                Diagnostic(ErrorCode.WRN_NullReferenceReturn, "b switch { true => null, false => u2 }").WithLocation(1100, 16)
+                );
+
+            verifier.VerifyIL("Program.Test1", """
+{
+  // Code size        7 (0x7)
+  .maxstack  1
+  IL_0000:  ldarg.0
+  IL_0001:  brtrue.s   IL_0005
+  IL_0003:  ldarg.1
+  IL_0004:  ret
+  IL_0005:  ldnull
+  IL_0006:  ret
+}
+""");
+
+            verifier.VerifyIL("Program.Test4", """
+{
+  // Code size       11 (0xb)
+  .maxstack  1
+  .locals init (U1 V_0)
+  IL_0000:  ldarg.0
+  IL_0001:  brfalse.s  IL_0007
+  IL_0003:  ldnull
+  IL_0004:  stloc.0
+  IL_0005:  br.s       IL_0009
+  IL_0007:  ldarg.1
+  IL_0008:  stloc.0
+  IL_0009:  ldloc.0
+  IL_000a:  ret
+}
+""");
+
+            verifier.VerifyIL("Program.Test6", """
+{
+  // Code size        7 (0x7)
+  .maxstack  1
+  IL_0000:  ldarg.0
+  IL_0001:  brtrue.s   IL_0005
+  IL_0003:  ldarg.1
+  IL_0004:  ret
+  IL_0005:  ldnull
+  IL_0006:  ret
+}
+""");
+
+            verifier.VerifyIL("Program.Test7", """
+{
+  // Code size       11 (0xb)
+  .maxstack  1
+  .locals init (U2 V_0)
+  IL_0000:  ldarg.0
+  IL_0001:  brfalse.s  IL_0007
+  IL_0003:  ldnull
+  IL_0004:  stloc.0
+  IL_0005:  br.s       IL_0009
+  IL_0007:  ldarg.1
+  IL_0008:  stloc.0
+  IL_0009:  ldloc.0
+  IL_000a:  ret
+}
+""");
+        }
+
+        [Fact]
+        public void NullableAnalysis_88_Conversion()
+        {
+            var src = @"
+#nullable enable
+
+#nullable enable
+
+[System.Runtime.CompilerServices.Union]
+struct U1
+{
+    public U1(C<string> value) { }
+    public object? Value => null;
+}
+
+struct U2
+{
+    public static implicit operator U2(C<string> s) => new U2();
+}
+
+class C<T>;
+
+public class C
+{
+    static void M1(C<string?>[] items)
+    {
+#line 100
+        foreach (U1 u in items!)
+        { }
+    }
+
+    static void M2(C<string?>[] items)
+    {
+#line 200
+        foreach (U1 u in items)
+        { }
+    }
+
+    static void M3(C<string?>[] items)
+    {
+#line 300
+        foreach (U2 u in items!)
+        { }
+    }
+
+    static void M4(C<string?>[] items)
+    {
+#line 400
+        foreach (U2 u in items)
+        { }
+    }
+}
+";
+            var comp = CreateCompilation([src, UnionAttributeSource]);
+
+            comp.VerifyDiagnostics(
+                // (200,21): warning CS8620: Argument of type 'C<string?>' cannot be used for parameter 'value' of type 'C<string>' in 'U1.U1(C<string> value)' due to differences in the nullability of reference types.
+                //         foreach (U1 u in items)
+                Diagnostic(ErrorCode.WRN_NullabilityMismatchInArgument, "u").WithArguments("C<string?>", "C<string>", "value", "U1.U1(C<string> value)").WithLocation(200, 21),
+                // (400,21): warning CS8619: Nullability of reference types in value of type 'C<string?>' doesn't match target type 'C<string>'.
+                //         foreach (U2 u in items)
+                Diagnostic(ErrorCode.WRN_NullabilityMismatchInAssignment, "u").WithArguments("C<string?>", "C<string>").WithLocation(400, 21)
+                );
+        }
+
+        [Fact]
+        public void NullableAnalysis_89_Conversion()
+        {
+            var src = @"
+#nullable enable
+
+#nullable enable
+
+[System.Runtime.CompilerServices.Union]
+struct U1
+{
+    public U1(C value) { }
+    public object? Value => null;
+}
+
+struct U2
+{
+    public static implicit operator U2(C s) => new U2();
+}
+
+public class C
+{
+    static void M1(C?[] items)
+    {
+#line 100
+        foreach (U1 u in items!)
+        { }
+    }
+
+    static void M2(C?[] items)
+    {
+#line 200
+        foreach (U1 u in items)
+        { }
+    }
+
+    static void M3(C?[] items)
+    {
+#line 300
+        foreach (U2 u in items!)
+        { }
+    }
+
+    static void M4(C?[] items)
+    {
+#line 400
+        foreach (U2 u in items)
+        { }
+    }
+}
+";
+            var comp = CreateCompilation([src, UnionAttributeSource]);
+
+            comp.VerifyDiagnostics(
+                // (200,21): warning CS8604: Possible null reference argument for parameter 'value' in 'U1.U1(C value)'.
+                //         foreach (U1 u in items)
+                Diagnostic(ErrorCode.WRN_NullReferenceArgument, "u").WithArguments("value", "U1.U1(C value)").WithLocation(200, 21),
+                // (400,18): warning CS8604: Possible null reference argument for parameter 's' in 'U2.implicit operator U2(C s)'.
+                //         foreach (U2 u in items)
+                Diagnostic(ErrorCode.WRN_NullReferenceArgument, "U2").WithArguments("s", "U2.implicit operator U2(C s)").WithLocation(400, 18)
+                );
         }
 
         [Fact]
@@ -48135,6 +49490,12 @@ union S1(System.ArgIterator, int);
             Assert.True(comp.GetTypeByMetadataName("S1").IsUnionType);
             VerifyCaseTypes(comp, "S1", ["System.ArgIterator", "System.Int32"]);
 
+            comp.GetDeclarationDiagnostics().Verify(
+                // (100,10): error CS9371: Cannot convert type 'ArgIterator' to 'object' via an implicit reference or boxing conversion
+                // union S1(System.ArgIterator, int);
+                Diagnostic(ErrorCode.ERR_NoImplicitConversionToObject, "System.ArgIterator").WithArguments("System.ArgIterator").WithLocation(100, 10)
+                );
+
             comp.VerifyEmitDiagnostics(
                 // (100,10): error CS9371: Cannot convert type 'ArgIterator' to 'object' via an implicit reference or boxing conversion
                 // union S1(System.ArgIterator, int);
@@ -49113,6 +50474,180 @@ union S2(int, bool)
             VerifyCaseTypes(comp, "S1", ["System.String"]);
             Assert.True(comp.GetTypeByMetadataName("S2").IsUnionType);
             VerifyCaseTypes(comp, "S2", ["System.Int32", "System.Boolean"]);
+        }
+
+        [Fact]
+        public void UnionDeclaration_39()
+        {
+            var src1 = @"
+partial union S1(int, bool)
+{
+}
+";
+            var src2 = @"
+partial union S1
+{
+}
+";
+            var comp = CreateCompilation([(src1, "src1.cs"), (src2, "src2.cs"), UnionAttributeSource, IUnionSource], options: TestOptions.DebugDll);
+
+            Assert.True(comp.GetTypeByMetadataName("S1").IsUnionType);
+            VerifyCaseTypes(comp, "S1", ["System.Int32", "System.Boolean"]);
+
+            var verifier = CompileAndVerify(comp).VerifyDiagnostics();
+
+            verifier.VerifyMethodBody("S1..ctor(int)",
+@"
+{
+  // Code size       14 (0xe)
+  .maxstack  2
+  // sequence point: <hidden>
+  IL_0000:  ldarg.0
+  IL_0001:  ldarg.1
+  IL_0002:  box        ""int""
+  IL_0007:  stfld      ""object S1.<Value>k__BackingField""
+  // sequence point: int
+  IL_000c:  nop
+  IL_000d:  ret
+}
+");
+        }
+
+        [Fact]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/86005")]
+        public void UnionDeclaration_40()
+        {
+            var src1 = @"
+partial union S1
+{
+}
+";
+            var src2 = @"
+partial union S1(int, bool)
+{
+}
+";
+            var comp = CreateCompilation([(src1, "src1.cs"), (src2, "src2.cs"), UnionAttributeSource, IUnionSource], options: TestOptions.DebugDll);
+
+            Assert.True(comp.GetTypeByMetadataName("S1").IsUnionType);
+            VerifyCaseTypes(comp, "S1", ["System.Int32", "System.Boolean"]);
+
+            var verifier = CompileAndVerify(comp).VerifyDiagnostics();
+
+            verifier.VerifyMethodBody("S1..ctor(int)",
+@"
+{
+  // Code size       14 (0xe)
+  .maxstack  2
+  // sequence point: <hidden>
+  IL_0000:  ldarg.0
+  IL_0001:  ldarg.1
+  IL_0002:  box        ""int""
+  IL_0007:  stfld      ""object S1.<Value>k__BackingField""
+  // sequence point: int
+  IL_000c:  nop
+  IL_000d:  ret
+}
+");
+        }
+
+        [Fact]
+        public void UnionDeclaration_41()
+        {
+            var src1 = @"
+partial union S1(int, bool);
+";
+            var src2 = @"
+partial union S1;
+";
+            var comp = CreateCompilation([(src1, "src1.cs"), (src2, "src2.cs"), UnionAttributeSource, IUnionSource], options: TestOptions.DebugDll);
+
+            Assert.True(comp.GetTypeByMetadataName("S1").IsUnionType);
+            VerifyCaseTypes(comp, "S1", ["System.Int32", "System.Boolean"]);
+
+            var verifier = CompileAndVerify(comp).VerifyDiagnostics();
+
+            verifier.VerifyMethodBody("S1..ctor(int)",
+@"
+{
+  // Code size       14 (0xe)
+  .maxstack  2
+  // sequence point: <hidden>
+  IL_0000:  ldarg.0
+  IL_0001:  ldarg.1
+  IL_0002:  box        ""int""
+  IL_0007:  stfld      ""object S1.<Value>k__BackingField""
+  // sequence point: int
+  IL_000c:  nop
+  IL_000d:  ret
+}
+");
+        }
+
+        [Fact]
+        [WorkItem("https://github.com/dotnet/roslyn/issues/86005")]
+        public void UnionDeclaration_42()
+        {
+            var src1 = @"
+partial union S1;
+";
+            var src2 = @"
+partial union S1(int, bool);
+";
+            var comp = CreateCompilation([(src1, "src1.cs"), (src2, "src2.cs"), UnionAttributeSource, IUnionSource], options: TestOptions.DebugDll);
+
+            Assert.True(comp.GetTypeByMetadataName("S1").IsUnionType);
+            VerifyCaseTypes(comp, "S1", ["System.Int32", "System.Boolean"]);
+
+            var verifier = CompileAndVerify(comp).VerifyDiagnostics();
+
+            verifier.VerifyMethodBody("S1..ctor(int)",
+@"
+{
+  // Code size       14 (0xe)
+  .maxstack  2
+  // sequence point: <hidden>
+  IL_0000:  ldarg.0
+  IL_0001:  ldarg.1
+  IL_0002:  box        ""int""
+  IL_0007:  stfld      ""object S1.<Value>k__BackingField""
+  // sequence point: int
+  IL_000c:  nop
+  IL_000d:  ret
+}
+");
+        }
+
+        [Fact, WorkItem("https://github.com/dotnet/roslyn/issues/86075")]
+        public void UnionDeclaration_43_Recursive()
+        {
+            var source = """
+union U1(U1, U2);
+union U2(U1, U2);
+""";
+
+            var comp = CreateEmptyCompilation(
+                [source, UnionAttributeSource, IUnionSource],
+                options: TestOptions.ReleaseDll.WithConcurrentBuild(false),
+                skipUsesIsNullable: true);
+
+            comp.GetDiagnostics();
+            VerifyCaseTypes(comp, "U1", ["U1", "U2"]);
+            VerifyCaseTypes(comp, "U2", ["U1", "U2"]);
+        }
+
+        [Fact, WorkItem("https://github.com/dotnet/roslyn/issues/86075")]
+        public void UnionDeclaration_44_Recursive()
+        {
+            var source = """
+union U1(U1, U2);
+union U2(U1, U2);
+""";
+
+            var comp = CreateCompilation([source, UnionAttributeSource, IUnionSource]);
+            comp.MakeTypeMissing(SpecialType.System_Object);
+            VerifyCaseTypes(comp, "U1", ["U1", "U2"]);
+            VerifyCaseTypes(comp, "U2", ["U1", "U2"]);
         }
 
         [Fact]

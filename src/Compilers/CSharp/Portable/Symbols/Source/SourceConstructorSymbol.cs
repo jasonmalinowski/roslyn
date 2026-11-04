@@ -254,7 +254,7 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
 
         internal sealed override bool HasUnsafeModifier => (DeclarationModifiers & DeclarationModifiers.Unsafe) != 0;
         internal sealed override bool HasSafeModifier => (DeclarationModifiers & DeclarationModifiers.Safe) != 0;
-        internal sealed override bool CanBeCallerUnsafe => MethodKind != MethodKind.StaticConstructor;
+        internal sealed override bool CanRequireUnsafe => MethodKind != MethodKind.StaticConstructor;
 
         protected override bool AllowRefOrOut
         {
@@ -287,6 +287,23 @@ namespace Microsoft.CodeAnalysis.CSharp.Symbols
         {
             SourcePartialImplementationPart?.ForceComplete(locationOpt, filter, cancellationToken);
             base.ForceComplete(locationOpt, filter, cancellationToken);
+        }
+
+        protected override void LazyAsyncMethodChecks(CancellationToken cancellationToken)
+        {
+            if (state.NotePartComplete(CompletionPart.StartAsyncMethodChecks))
+            {
+                if (IsPartialDefinition)
+                {
+                    DeclaringCompilation.SymbolDeclaredEvent(this);
+                }
+
+                state.NotePartComplete(CompletionPart.FinishAsyncMethodChecks);
+            }
+            else
+            {
+                state.SpinWaitComplete(CompletionPart.FinishAsyncMethodChecks, cancellationToken);
+            }
         }
 
         protected override void PartialConstructorChecks(BindingDiagnosticBag diagnostics)
